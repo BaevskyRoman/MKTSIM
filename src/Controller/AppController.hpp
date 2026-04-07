@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+
 #include "Model/Engine.hpp"
 #include "View/Renderer.hpp"
 #include "View/UI/UIManager.hpp"
@@ -23,10 +24,13 @@ private:
     sf::RenderWindow window_;
     Model::Engine engine_;
     View::Renderer renderer_;
-    //View::UI::UIManager uiManager_;
 
     bool isDragging_ = false;
     sf::Vector2i lastMousePos_;
+
+    bool isSelecting_ = false;
+    sf::Vector2f selectionStart_;
+    sf::Vector2f selectionEnd_;
 };
 
 }

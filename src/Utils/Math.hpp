@@ -5,6 +5,7 @@
 namespace Utils::Math {
 
     constexpr float EPSILON = 0.0001f;
+    constexpr float PI = 3.14159265f;
 
     inline bool isEqual(float a, float b) {
         return std::abs(a - b) < EPSILON;
