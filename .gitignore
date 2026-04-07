@@ -1,0 +1,11 @@
+*.o
+*.obj
+
+bin/
+build/
+obj/
+
+*~
+.DS_Store
+
+.vscode/
