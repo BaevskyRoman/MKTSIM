@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <random>
 
 namespace Utils::Math {
 
@@ -14,5 +15,23 @@ namespace Utils::Math {
     inline bool isZero(float a) {
         return std::abs(a) < EPSILON;
     }
+
+class Random {
+public:
+    Random() = delete;
+
+    static float getFloat(float min, float max) {
+        std::uniform_real_distribution<float> dist(min, max);
+        return dist(generator_);
+    }
+
+    static int getInt(int min, int max) {
+        std::uniform_int_distribution<int> dist(min, max);
+        return dist(generator_);
+    }
+
+private:
+    inline static std::mt19937 generator_{std::random_device{}()};
+};
 
 }

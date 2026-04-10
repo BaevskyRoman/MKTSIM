@@ -1,5 +1,4 @@
 #include <cmath>
-#include <random>
 
 #include "Model/Engine.hpp"
 #include "Config/VisualConfig.hpp"
@@ -37,24 +36,15 @@ void Engine::update(float deltaTime) {
                 sf::Vector2f normal;
                 float overlap;
                 if (Utils::Math::isZero(distance)) {
-                    normal = {1.0f, 0.0f};
+                    float angle = Utils::Math::Random::getFloat(0.0f, 2.0f * Utils::Math::PI);
+                    normal = {std::cos(angle), std::sin(angle)};
                     overlap = minDist;
                 }
                 else {
                     normal = delta / distance;
                     overlap = minDist - distance;
                 }
-                
-                // COLLISION HANDLING
-                float massSum = m1.mass + m2.mass;
-                
-                float ratio1 = m2.mass / massSum; 
-                float ratio2 = m1.mass / massSum;
 
-                m1.position -= normal * (overlap * ratio1);
-                m2.position += normal * (overlap * ratio2);
-
-                // IMPULSE CALCULATION
                 sf::Vector2f relativeVelocity = m1.velocity - m2.velocity;
                 float velocityAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
 
@@ -62,7 +52,7 @@ void Engine::update(float deltaTime) {
                     continue;
                 }
 
-                float impulseScalar = (2.0f * velocityAlongNormal) / massSum;
+                float impulseScalar = (2.0f * velocityAlongNormal) / (m1.mass + m2.mass);
                 m1.velocity -= normal * (impulseScalar * m2.mass);
                 m2.velocity += normal * (impulseScalar * m1.mass);
             }
@@ -73,21 +63,12 @@ void Engine::update(float deltaTime) {
 void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float speed, float mass, float radius) {
     float areaSize = area.size.x * area.size.y;
     float maxMolecules = areaSize / (4.0f * radius * radius);
-    
     int count = static_cast<int>(maxMolecules * concentration);
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    
-    std::uniform_real_distribution<float> xDist(area.position.x + radius, area.position.x + area.size.x - radius);
-    std::uniform_real_distribution<float> yDist(area.position.y + radius, area.position.y + area.size.y - radius);
-    
-    std::uniform_real_distribution<float> angleDist(0.0f, 2.0f * Utils::Math::PI);
-
     for (int i = 0; i < count; ++i) {
-        float px = xDist(gen);
-        float py = yDist(gen);
-        float angle = angleDist(gen);
+        float px = Utils::Math::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
+        float py = Utils::Math::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
+        float angle = Utils::Math::Random::getFloat(0.0f, 2.0f * Utils::Math::PI);
         
         float vx = std::cos(angle) * speed;
         float vy = std::sin(angle) * speed;
