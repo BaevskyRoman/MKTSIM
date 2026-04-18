@@ -4,7 +4,10 @@
 
 namespace Config::Physics {
 
-    constexpr float DEFAULT_MOLECULE_MASS = 10.0f;
-    constexpr float DEFAULT_MOLECULE_RADIUS = 5.0f;
+    constexpr float MIN_MOLECULE_MASS = 1.0f;
+    constexpr float MAX_MOLECULE_MASS = 10.0f;
+
+    constexpr float MIN_MOLECULE_RADIUS = 1.0f;
+    constexpr float MAX_MOLECULE_RADIUS = 10.0f;
 
 }

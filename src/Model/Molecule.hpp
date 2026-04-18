@@ -8,8 +8,8 @@ namespace Model {
 struct Molecule {
     sf::Vector2f position;
     sf::Vector2f velocity;
-    float mass = Config::Physics::DEFAULT_MOLECULE_MASS;
-    float radius = Config::Physics::DEFAULT_MOLECULE_RADIUS;
+    float mass;
+    float radius;
 
     void move(float deltaTime) {
         position += velocity * deltaTime;
