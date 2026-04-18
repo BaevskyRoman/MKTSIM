@@ -53,6 +53,10 @@ void AppController::processEvents() {
                     isSelecting_ = true;
                     selectionStart_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
                     selectionEnd_ = selectionStart_;
+                } else if ((bottomBar_.getActiveTool() == View::UI::ToolType::HardMacroObject)) {
+                    isSelecting_ = true;
+                    selectionStart_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
+                    selectionEnd_ = selectionStart_;
                 }
             }
         }
@@ -75,6 +79,20 @@ void AppController::processEvents() {
                             sf::FloatRect area(sf::Vector2f(left, top), sf::Vector2f(width, height));
                             engine_.spawnMoleculesInArea(area, settings.concentration, 
                                 settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
+                        }
+                    }
+                } else if (isSelecting_ && bottomBar_.getActiveTool() == View::UI::ToolType::HardMacroObject) {
+                    isSelecting_ = false;
+                    
+                    if (!ImGui::GetIO().WantCaptureMouse) {
+                        float left = std::min(selectionStart_.x, selectionEnd_.x);
+                        float top = std::min(selectionStart_.y, selectionEnd_.y);
+                        float width = std::abs(selectionStart_.x - selectionEnd_.x);
+                        float height = std::abs(selectionStart_.y - selectionEnd_.y);
+                        
+                        if (width > 1.0f && height > 1.0f) {
+                            sf::FloatRect area(sf::Vector2f(left, top), sf::Vector2f(width, height));
+                            engine_.addHardMO(area);
                         }
                     }
                 }

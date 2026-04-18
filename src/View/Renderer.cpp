@@ -19,10 +19,19 @@ Renderer::Renderer(float windowWidth, float windowHeight) {
 
 void Renderer::draw(sf::RenderWindow& window, const Model::Engine& engine) {
     window.setView(camera_);
+
+    // --- HARD MACRO OBJECTS ---
+    sf::RectangleShape rectShape;
+    rectShape.setFillColor(Config::Visual::HMO_COLOR);
+    for (const auto& rect : engine.getHardMO()) {
+        rectShape.setPosition(rect.position);
+        rectShape.setSize(rect.size);
+        window.draw(rectShape);
+    }
+
+    // --- MOLECULES ---
     const auto& molecules = engine.getMolecules();
-
     moleculeVertices_.clear();
-
     int points = static_cast<int>(unitCircle_.size()) - 1;
     for (const auto& mol : molecules) {
         sf::Vector2f center = mol.position;
