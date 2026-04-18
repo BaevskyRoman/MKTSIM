@@ -21,6 +21,9 @@ private:
     void update(float deltaTime);
     void render();
 
+    void selectionStart(const sf::Event::MouseButtonPressed* e);
+    sf::FloatRect selectionEnd();
+
     sf::RenderWindow window_;
     Model::Engine engine_;
     View::Renderer renderer_;
@@ -30,8 +33,8 @@ private:
     sf::Vector2i lastMousePos_;
 
     bool isSelecting_ = false;
-    sf::Vector2f selectionStart_;
-    sf::Vector2f selectionEnd_;
+    sf::Vector2f selectionStartPos_;
+    sf::Vector2f selectionEndPos_;
 };
 
 }

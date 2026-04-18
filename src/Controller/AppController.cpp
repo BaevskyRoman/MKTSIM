@@ -40,66 +40,68 @@ void AppController::processEvents() {
 
         if (event->is<sf::Event::Closed>()) {
             window_.close();
+            continue;
         }
         
-        else if (const auto* e = event->getIf<sf::Event::MouseButtonPressed>()) {
+        // --- MOUSE BUTTON PRESSED ---
+        if (const auto* e = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (ImGui::GetIO().WantCaptureMouse) continue;
 
             if (e->button == sf::Mouse::Button::Right) {
                 isDragging_ = true;
-                lastMousePos_ = e->position; 
+                lastMousePos_ = e->position;
             } else if (e->button == sf::Mouse::Button::Left) {
-                if (bottomBar_.getActiveTool() == View::UI::ToolType::Molecules) {
-                    isSelecting_ = true;
-                    selectionStart_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
-                    selectionEnd_ = selectionStart_;
-                } else if ((bottomBar_.getActiveTool() == View::UI::ToolType::HardMacroObject)) {
-                    isSelecting_ = true;
-                    selectionStart_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
-                    selectionEnd_ = selectionStart_;
+                switch (bottomBar_.getActiveTool()) {
+                case View::UI::ToolType::Molecules:
+                    selectionStart(e);
+                    break;
+                case View::UI::ToolType::HardMacroObject:
+                    selectionStart(e);
+                    break;
+                case View::UI::ToolType::SoftMacroObject:
+                    break;
                 }
             }
+
+            continue;
         }
         
-        else if (const auto* e = event->getIf<sf::Event::MouseButtonReleased>()) {
+        // --- MOUSE BUTTON RELEASED ---
+        if (const auto* e = event->getIf<sf::Event::MouseButtonReleased>()) {
             if (e->button == sf::Mouse::Button::Right) {
                 isDragging_ = false;
             } else if (e->button == sf::Mouse::Button::Left) {
-                if (isSelecting_ && bottomBar_.getActiveTool() == View::UI::ToolType::Molecules) {
-                    isSelecting_ = false;
-                    
-                    if (!ImGui::GetIO().WantCaptureMouse) {
-                        float left = std::min(selectionStart_.x, selectionEnd_.x);
-                        float top = std::min(selectionStart_.y, selectionEnd_.y);
-                        float width = std::abs(selectionStart_.x - selectionEnd_.x);
-                        float height = std::abs(selectionStart_.y - selectionEnd_.y);
-                        
-                        if (width > 1.0f && height > 1.0f) {
-                            View::UI::MoleculesSettings settings = bottomBar_.getMolSettings();
-                            sf::FloatRect area(sf::Vector2f(left, top), sf::Vector2f(width, height));
-                            engine_.spawnMoleculesInArea(area, settings.concentration, 
-                                settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
-                        }
+                if (!isSelecting_) continue;
+                if (ImGui::GetIO().WantCaptureMouse) continue;
+
+                switch (bottomBar_.getActiveTool()) {
+                case View::UI::ToolType::Molecules: {
+                    View::UI::MoleculesSettings settings = bottomBar_.getMolSettings();
+                    sf::FloatRect area = selectionEnd();
+                    if (area.size.x > 1.0f && area.size.y > 1.0f) {
+                        engine_.spawnMoleculesInArea(area, settings.concentration, 
+                            settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
                     }
-                } else if (isSelecting_ && bottomBar_.getActiveTool() == View::UI::ToolType::HardMacroObject) {
-                    isSelecting_ = false;
-                    
-                    if (!ImGui::GetIO().WantCaptureMouse) {
-                        float left = std::min(selectionStart_.x, selectionEnd_.x);
-                        float top = std::min(selectionStart_.y, selectionEnd_.y);
-                        float width = std::abs(selectionStart_.x - selectionEnd_.x);
-                        float height = std::abs(selectionStart_.y - selectionEnd_.y);
-                        
-                        if (width > 1.0f && height > 1.0f) {
-                            sf::FloatRect area(sf::Vector2f(left, top), sf::Vector2f(width, height));
-                            engine_.addHardMO(area);
-                        }
+                    break;
+                }
+                case View::UI::ToolType::HardMacroObject: {
+                    sf::FloatRect area = selectionEnd();
+                    if (area.size.x > 1.0f && area.size.y > 1.0f) {
+                        engine_.addHardMO(area);
                     }
+                    break;
+                }
+                case View::UI::ToolType::SoftMacroObject: {
+                    break;
+                }
                 }
             }
+
+            continue;
         }
         
-        else if (const auto* e = event->getIf<sf::Event::MouseMoved>()) {
+        // --- MOUSE MOVED ---
+        if (const auto* e = event->getIf<sf::Event::MouseMoved>()) {
             if (isDragging_) {
                 sf::Vector2f oldPos = window_.mapPixelToCoords(lastMousePos_, renderer_.getCamera());
                 sf::Vector2f newPos = window_.mapPixelToCoords(e->position, renderer_.getCamera());
@@ -111,11 +113,14 @@ void AppController::processEvents() {
             }
             
             if (isSelecting_) {
-                selectionEnd_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
+                selectionEndPos_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
             }
+
+            continue;
         }
         
-        else if (const auto* e = event->getIf<sf::Event::MouseWheelScrolled>()) {
+        // --- SCROLL ---
+        if (const auto* e = event->getIf<sf::Event::MouseWheelScrolled>()) {
             if (ImGui::GetIO().WantCaptureMouse) continue;
 
             if (e->wheel == sf::Mouse::Wheel::Vertical) { 
@@ -125,6 +130,8 @@ void AppController::processEvents() {
                     renderer_.zoomCamera(1.1f);
                 }
             }
+
+            continue;
         }
     }
 }
@@ -140,10 +147,28 @@ void AppController::render() {
     window_.clear(Config::Visual::BG_COLOR);
     renderer_.draw(window_, engine_);
     if (isSelecting_) {
-        renderer_.drawSelection(window_, selectionStart_, selectionEnd_);
+        renderer_.drawSelection(window_, selectionStartPos_, selectionEndPos_);
     }
     bottomBar_.render(window_);
     window_.display();
 }
 
+
+void AppController::selectionStart(const sf::Event::MouseButtonPressed* e) {
+    isSelecting_ = true;
+    selectionStartPos_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
+    selectionEndPos_ = selectionStartPos_;
+}
+
+
+sf::FloatRect AppController::selectionEnd() {
+    isSelecting_ = false;
+                    
+    float left = std::min(selectionStartPos_.x, selectionEndPos_.x);
+    float top = std::min(selectionStartPos_.y, selectionEndPos_.y);
+    float width = std::abs(selectionStartPos_.x - selectionEndPos_.x);
+    float height = std::abs(selectionStartPos_.y - selectionEndPos_.y);
+    
+    return sf::FloatRect(sf::Vector2f(left, top), sf::Vector2f(width, height));
+}
 }
