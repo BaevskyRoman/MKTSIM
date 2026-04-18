@@ -44,9 +44,9 @@ void BottomBar::drawBottomBar(const sf::RenderWindow& window) {
 
     drawToolButton("Molecules", ToolType::Molecules);
     ImGui::SameLine();
-    drawToolButton("HardMO", ToolType::HardMacroObject);
+    drawToolButton("StaticBody", ToolType::StaticBody);
     ImGui::SameLine();
-    drawToolButton("SoftMO", ToolType::SoftMacroObject);
+    drawToolButton("DynamicBody", ToolType::DynamicBody);
 
     ImGui::End();
 }
@@ -98,16 +98,17 @@ void BottomBar::drawToolSettings() {
         ImGui::SliderInt("Radius", &molSettings_.radius, Config::Physics::MIN_MOLECULE_RADIUS, Config::Physics::MAX_MOLECULE_RADIUS);
         }
         break;
-    case ToolType::HardMacroObject:
-        if (ImGui::Begin("HardMacroObject Settings", &showToolSettings_, flags)) {
-            ImGui::Combo("Shape", &hmoSettings_.currentShape, hmoSettings_.shapes, IM_ARRAYSIZE(hmoSettings_.shapes));
-            if (hmoSettings_.currentShape == 1) {
-                ImGui::SliderFloat("Thickness", &hmoSettings_.thickness, Config::Physics::MIN_BOX_THICKNESS, 
+    case ToolType::StaticBody:
+        if (ImGui::Begin("StaticBody Settings", &showToolSettings_, flags)) {
+            ImGui::Combo("Shape", &staticBodySettings_.currentShape, staticBodySettings_.shapes, IM_ARRAYSIZE(staticBodySettings_.shapes));
+            if (staticBodySettings_.currentShape == 1) {
+                ImGui::SliderFloat("Thickness", &staticBodySettings_.thickness, Config::Physics::MIN_BOX_THICKNESS, 
                                     Config::Physics::MAX_BOX_THICNESS, "%.1f");
             }
         }
         break;
-    case ToolType::SoftMacroObject:
+    case ToolType::DynamicBody:
+        (ImGui::Begin("DynamicBody Settings", &showToolSettings_, flags));
         break;
     }
 

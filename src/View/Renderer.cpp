@@ -20,10 +20,10 @@ Renderer::Renderer(float windowWidth, float windowHeight) {
 void Renderer::draw(sf::RenderWindow& window, const Model::Engine& engine) {
     window.setView(camera_);
 
-    // --- HARD MACRO OBJECTS ---
+    // --- STATIC BODY ---
     sf::RectangleShape rectShape;
-    rectShape.setFillColor(Config::Visual::HMO_COLOR);
-    for (const auto& rect : engine.getHardMO()) {
+    rectShape.setFillColor(Config::Visual::STATIC_BODY_COLOR);
+    for (const auto& rect : engine.getStaticBodies()) {
         rectShape.setPosition(rect.position);
         rectShape.setSize(rect.size);
         window.draw(rectShape);

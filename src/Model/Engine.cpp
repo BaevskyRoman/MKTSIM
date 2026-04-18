@@ -8,8 +8,8 @@
 namespace Model {
 
 const std::vector<Molecule>& Engine::getMolecules() const { return molecules_; }
-const std::vector<sf::FloatRect>& Engine::getHardMO() const { return hardMO_; }
-void Engine::addHardMO(const sf::FloatRect& rect) { hardMO_.push_back(rect); }
+const std::vector<sf::FloatRect>& Engine::getStaticBodies() const { return staticBodies_; }
+void Engine::addStaticBody(const sf::FloatRect& rect) { staticBodies_.push_back(rect); }
 
 
 void Engine::update(float deltaTime) {
@@ -18,9 +18,9 @@ void Engine::update(float deltaTime) {
         mol.move(deltaTime);
     }
 
-    // --- MOL TO HMO
+    // --- MOL TO STATIC BODY ---
     for (auto& mol : molecules_) {
-        for (const auto& rect : hardMO_) {
+        for (const auto& rect : staticBodies_) {
             float closestX = std::clamp(mol.position.x, rect.position.x, rect.position.x + rect.size.x);
             float closestY = std::clamp(mol.position.y, rect.position.y, rect.position.y + rect.size.y);
 

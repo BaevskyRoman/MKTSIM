@@ -10,8 +10,8 @@ namespace UI {
 
 enum class ToolType {
     Molecules,
-    HardMacroObject,
-    SoftMacroObject
+    StaticBody,
+    DynamicBody,
 };
 
 
@@ -26,7 +26,7 @@ struct MoleculesSettings {
 };
 
 
-struct HMOSettings {
+struct StaticBodySettings {
     int currentShape = 0;
     const char* shapes[2] = {"Rectangle", "Box"};
     float thickness = 10.f;
@@ -47,7 +47,7 @@ public:
     ToolType getActiveTool() const { return activeTool_; }
 
     MoleculesSettings molSettings_;
-    HMOSettings hmoSettings_;
+    StaticBodySettings staticBodySettings_;
 
 private:
     void drawBottomBar(const sf::RenderWindow& window);

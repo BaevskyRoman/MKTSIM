@@ -17,8 +17,8 @@ public:
 
     const std::vector<Molecule>& getMolecules() const;
 
-    const std::vector<sf::FloatRect>& getHardMO() const;
-    void addHardMO(const sf::FloatRect& rect);
+    const std::vector<sf::FloatRect>& getStaticBodies() const;
+    void addStaticBody(const sf::FloatRect& rect);
 
     void spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float min_speed, float max_speed, 
         float mass, float radius);
@@ -26,7 +26,7 @@ public:
 
 private:
     std::vector<Molecule> molecules_;
-    std::vector<sf::FloatRect> hardMO_;
+    std::vector<sf::FloatRect> staticBodies_;
 };
 
 }
