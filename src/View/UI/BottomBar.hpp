@@ -22,7 +22,14 @@ struct MoleculesSettings {
     float minSpeed = 0.0f;
     float maxSpeed = 100.0f;
     int mass = Config::Physics::MIN_MOLECULE_MASS;
-    int radius = Config::Physics::MIN_MOLECULE_RADIUS;
+    int radius = 5;
+};
+
+
+struct HMOSettings {
+    int currentShape = 0;
+    const char* shapes[2] = {"Rectangle", "Box"};
+    float thickness = 10.f;
 };
 
 
@@ -38,7 +45,9 @@ public:
     void render(sf::RenderWindow& window);
 
     ToolType getActiveTool() const { return activeTool_; }
-    MoleculesSettings getMolSettings() const { return molSettings_; }
+
+    MoleculesSettings molSettings_;
+    HMOSettings hmoSettings_;
 
 private:
     void drawBottomBar(const sf::RenderWindow& window);
@@ -47,8 +56,6 @@ private:
 
     ToolType activeTool_ = ToolType::Molecules;
     bool showToolSettings_ = false;
-
-    MoleculesSettings molSettings_;
 };
 
 

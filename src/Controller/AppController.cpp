@@ -1,5 +1,6 @@
 #include "Controller/AppController.hpp"
 #include "Config/VisualConfig.hpp"
+#include <cstring>
 
 
 namespace Controller {
@@ -76,7 +77,7 @@ void AppController::processEvents() {
 
                 switch (bottomBar_.getActiveTool()) {
                 case View::UI::ToolType::Molecules: {
-                    View::UI::MoleculesSettings settings = bottomBar_.getMolSettings();
+                    View::UI::MoleculesSettings settings = bottomBar_.molSettings_;
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x > 1.0f && area.size.y > 1.0f) {
                         engine_.spawnMoleculesInArea(area, settings.concentration, 
@@ -85,9 +86,20 @@ void AppController::processEvents() {
                     break;
                 }
                 case View::UI::ToolType::HardMacroObject: {
+                    View::UI::HMOSettings settings = bottomBar_.hmoSettings_;
                     sf::FloatRect area = selectionEnd();
-                    if (area.size.x > 1.0f && area.size.y > 1.0f) {
-                        engine_.addHardMO(area);
+                    if (std::strcmp(settings.shapes[settings.currentShape], "Rectangle") == 0) {
+                        if (area.size.x > 1.0f && area.size.y > 1.0f) {
+                            engine_.addHardMO(area);
+                        }
+                    } else if (std::strcmp(settings.shapes[settings.currentShape], "Box") == 0) {
+                        float th = settings.thickness;
+                        engine_.addHardMO(sf::FloatRect(area.position, sf::Vector2f(area.size.x, th)));
+                        engine_.addHardMO(sf::FloatRect(area.position + sf::Vector2f(area.size.x - th, 0), 
+                                        sf::Vector2f(th, area.size.y)));
+                        engine_.addHardMO(sf::FloatRect(area.position, sf::Vector2f(th, area.size.y)));
+                        engine_.addHardMO(sf::FloatRect(area.position + sf::Vector2f(0, area.size.y - th),
+                    sf::Vector2f(area.size.x, th)));
                     }
                     break;
                 }

@@ -76,13 +76,13 @@ void BottomBar::drawToolButton(const char* label, ToolType tool) {
 
 
 void BottomBar::drawToolSettings() {
-    if (!showToolSettings_ || activeTool_ != ToolType::Molecules) {
-        return;
-    }
+    if (!showToolSettings_) return;
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
 
-    if (ImGui::Begin("Molecules Settings", &showToolSettings_, flags)) {
+    switch (activeTool_) {
+    case ToolType::Molecules:
+        if (ImGui::Begin("Molecules Settings", &showToolSettings_, flags)) {
         ImGui::Combo("Shape", &molSettings_.currentShape, molSettings_.shapes, IM_ARRAYSIZE(molSettings_.shapes));
 
         ImGui::Separator();
@@ -96,7 +96,21 @@ void BottomBar::drawToolSettings() {
 
         ImGui::SliderInt("Mass", &molSettings_.mass, Config::Physics::MIN_MOLECULE_MASS, Config::Physics::MAX_MOLECULE_MASS);
         ImGui::SliderInt("Radius", &molSettings_.radius, Config::Physics::MIN_MOLECULE_RADIUS, Config::Physics::MAX_MOLECULE_RADIUS);
+        }
+        break;
+    case ToolType::HardMacroObject:
+        if (ImGui::Begin("HardMacroObject Settings", &showToolSettings_, flags)) {
+            ImGui::Combo("Shape", &hmoSettings_.currentShape, hmoSettings_.shapes, IM_ARRAYSIZE(hmoSettings_.shapes));
+            if (hmoSettings_.currentShape == 1) {
+                ImGui::SliderFloat("Thickness", &hmoSettings_.thickness, Config::Physics::MIN_BOX_THICKNESS, 
+                                    Config::Physics::MAX_BOX_THICNESS, "%.1f");
+            }
+        }
+        break;
+    case ToolType::SoftMacroObject:
+        break;
     }
+
     ImGui::End();
 }
 
