@@ -7,10 +7,6 @@
 
 namespace Model {
 
-Engine::Engine()
-{
-}
-
 const std::vector<Molecule>& Engine::getMolecules() const {
     return molecules_;
 }
@@ -60,8 +56,9 @@ void Engine::update(float deltaTime) {
     }
 }
 
-void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float speed, float mass, float radius) {
-    float areaSize = area.size.x * area.size.y;
+void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, 
+                        float min_speed, float max_speed, float mass, float radius) {
+    float areaSize = (area.size.x - 2*radius) * (area.size.y - 2*radius);
     float maxMolecules = areaSize / (4.0f * radius * radius);
     int count = static_cast<int>(maxMolecules * concentration);
 
@@ -69,6 +66,7 @@ void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration
         float px = Utils::Math::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
         float py = Utils::Math::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
         float angle = Utils::Math::Random::getFloat(0.0f, 2.0f * Utils::Math::PI);
+        float speed = Utils::Math::Random::getFloat(min_speed, max_speed);
         
         float vx = std::cos(angle) * speed;
         float vy = std::sin(angle) * speed;

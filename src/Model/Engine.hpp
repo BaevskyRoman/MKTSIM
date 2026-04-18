@@ -11,14 +11,15 @@ namespace Model {
 
 class Engine {
 public:
-    Engine();
+    Engine() = default;
     ~Engine() = default;
 
     void update(float deltaTime);
 
     const std::vector<Molecule>& getMolecules() const;
 
-    void spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float speed, float mass, float radius);
+    void spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float min_speed, float max_speed, 
+        float mass, float radius);
     void spawnMolecule(float x, float y, float vx, float vy);
 
 private:

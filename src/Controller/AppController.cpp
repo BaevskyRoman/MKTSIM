@@ -73,8 +73,8 @@ void AppController::processEvents() {
                         if (width > 1.0f && height > 1.0f) {
                             View::UI::MoleculesSettings settings = bottomBar_.getMolSettings();
                             sf::FloatRect area(sf::Vector2f(left, top), sf::Vector2f(width, height));
-                            engine_.spawnMoleculesInArea(area, settings.concentration, settings.maxSpeed, 
-                                settings.mass, settings.radius);
+                            engine_.spawnMoleculesInArea(area, settings.concentration, 
+                                settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
                         }
                     }
                 }
