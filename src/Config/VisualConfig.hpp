@@ -10,6 +10,7 @@ namespace Config::Visual {
     constexpr unsigned int WINDOW_HEIGHT = 768;
     constexpr unsigned int FPS_LIMIT = 60;
 
+    constexpr unsigned int MOLECULE_VERTICES_QTY = 8;
     
     inline const sf::Color BG_COLOR = sf::Color(30, 30, 30);
     inline const sf::Color MOLECULE_COLOR = sf::Color(0, 150, 255);

@@ -61,7 +61,7 @@ void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration
     float areaSize = (area.size.x - 2*radius) * (area.size.y - 2*radius);
     float maxMolecules = areaSize / (4.0f * radius * radius);
     int count = static_cast<int>(maxMolecules * concentration);
-
+    
     for (int i = 0; i < count; ++i) {
         float px = Utils::Math::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
         float py = Utils::Math::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);

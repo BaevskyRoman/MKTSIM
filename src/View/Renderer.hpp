@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <vector>
 
 namespace Model {
     class Engine;
@@ -23,6 +24,11 @@ public:
 
 private:
     sf::View camera_;
+
+    sf::VertexArray moleculeVertices_;
+    std::vector<sf::Vector2f> unitCircle_;
+    
+    void initUnitCircle(int pointsPerCircle);
 };
 
 }
