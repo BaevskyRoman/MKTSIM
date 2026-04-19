@@ -1,5 +1,6 @@
 #include "View/UI/BottomBar.hpp"
 #include "Config/VisualConfig.hpp"
+#include <cstring>
 
 
 namespace View {
@@ -109,6 +110,11 @@ void BottomBar::drawToolSettings() {
         break;
     case ToolType::DynamicBody:
         (ImGui::Begin("DynamicBody Settings", &showToolSettings_, flags));
+        ImGui::Combo("CalcMode", &dynamicBodySettings_.currentCalcMode, dynamicBodySettings_.CalcModes, IM_ARRAYSIZE(dynamicBodySettings_.CalcModes));
+        if (strcmp(dynamicBodySettings_.CalcModes[dynamicBodySettings_.currentCalcMode], "Mass") == 0)
+            ImGui::SliderFloat("Mass", &dynamicBodySettings_.mass, 1, 1000);
+        else if (strcmp(dynamicBodySettings_.CalcModes[dynamicBodySettings_.currentCalcMode], "Density") == 0)
+            ImGui::SliderFloat("Density", &dynamicBodySettings_.density, 0, 1);
         break;
     }
 

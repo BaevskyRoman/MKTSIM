@@ -20,12 +20,23 @@ Renderer::Renderer(float windowWidth, float windowHeight) {
 void Renderer::draw(sf::RenderWindow& window, const Model::Engine& engine) {
     window.setView(camera_);
 
-    // --- STATIC BODY ---
+    // --- STATIC BODIES ---
     sf::RectangleShape rectShape;
     rectShape.setFillColor(Config::Visual::STATIC_BODY_COLOR);
-    for (const auto& rect : engine.getStaticBodies()) {
-        rectShape.setPosition(rect.position);
-        rectShape.setSize(rect.size);
+    for (const auto& body : engine.getStaticBodies()) {
+        rectShape.setPosition(body.position);
+        rectShape.setSize(body.size);
+        window.draw(rectShape);
+    }
+
+    // --- DINAMIC BODIES ---
+    rectShape.setFillColor(Config::Visual::DINAMIC_BODY_COLOR);
+    for (const auto& body : engine.getDynamicBodies()) {
+        rectShape.setSize(body.size);
+        rectShape.setOrigin({body.size.x / 2.0f, body.size.y / 2.0f});
+        rectShape.setPosition(body.position);
+        rectShape.setRotation(sf::radians(body.angle));
+
         window.draw(rectShape);
     }
 

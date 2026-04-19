@@ -33,6 +33,14 @@ struct StaticBodySettings {
 };
 
 
+struct DynamicBodySettings {
+    int currentCalcMode = 0;
+    const char* CalcModes[2] = {"Density", "Mass"};
+    float mass = 10;
+    float density = 10;
+};
+
+
 class BottomBar {
 public:
     BottomBar() = default;
@@ -48,6 +56,7 @@ public:
 
     MoleculesSettings molSettings_;
     StaticBodySettings staticBodySettings_;
+    DynamicBodySettings dynamicBodySettings_;
 
 private:
     void drawBottomBar(const sf::RenderWindow& window);

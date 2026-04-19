@@ -15,6 +15,7 @@ namespace Config::Visual {
     inline const sf::Color BG_COLOR = sf::Color(30, 30, 30);
     inline const sf::Color MOLECULE_COLOR = sf::Color(0, 150, 255);
     inline const sf::Color STATIC_BODY_COLOR = sf::Color(145, 0, 0);
+    inline const sf::Color DINAMIC_BODY_COLOR = sf::Color(0, 145, 0);
 
     inline const sf::Color SELECTION_RECT_COLOR = sf::Color(100, 150, 255, 80);
     inline const sf::Color SELECTION_RECT_BORDER_COLOR = sf::Color(100, 150, 255, 200);

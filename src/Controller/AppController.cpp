@@ -60,6 +60,7 @@ void AppController::processEvents() {
                     selectionStart(e);
                     break;
                 case View::UI::ToolType::DynamicBody:
+                    selectionStart(e);
                     break;
                 }
             }
@@ -79,31 +80,38 @@ void AppController::processEvents() {
                 case View::UI::ToolType::Molecules: {
                     View::UI::MoleculesSettings settings = bottomBar_.molSettings_;
                     sf::FloatRect area = selectionEnd();
-                    if (area.size.x > 1.0f && area.size.y > 1.0f) {
-                        engine_.spawnMoleculesInArea(area, settings.concentration, 
-                            settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
-                    }
+                    if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
+                    engine_.spawnMoleculesInArea(area, settings.concentration, 
+                                                settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
                     break;
                 }
                 case View::UI::ToolType::StaticBody: {
                     View::UI::StaticBodySettings settings = bottomBar_.staticBodySettings_;
                     sf::FloatRect area = selectionEnd();
+                    if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
                     if (std::strcmp(settings.shapes[settings.currentShape], "Rectangle") == 0) {
-                        if (area.size.x > 1.0f && area.size.y > 1.0f) {
-                            engine_.addStaticBody(area);
-                        }
+                        engine_.spawnStaticBody(area);
                     } else if (std::strcmp(settings.shapes[settings.currentShape], "Box") == 0) {
                         float th = settings.thickness;
-                        engine_.addStaticBody(sf::FloatRect(area.position, sf::Vector2f(area.size.x, th)));
-                        engine_.addStaticBody(sf::FloatRect(area.position + sf::Vector2f(area.size.x - th, 0), 
+                        engine_.spawnStaticBody(sf::FloatRect(area.position, sf::Vector2f(area.size.x, th)));
+                        engine_.spawnStaticBody(sf::FloatRect(area.position + sf::Vector2f(area.size.x - th, 0), 
                                         sf::Vector2f(th, area.size.y)));
-                        engine_.addStaticBody(sf::FloatRect(area.position, sf::Vector2f(th, area.size.y)));
-                        engine_.addStaticBody(sf::FloatRect(area.position + sf::Vector2f(0, area.size.y - th),
+                        engine_.spawnStaticBody(sf::FloatRect(area.position, sf::Vector2f(th, area.size.y)));
+                        engine_.spawnStaticBody(sf::FloatRect(area.position + sf::Vector2f(0, area.size.y - th),
                     sf::Vector2f(area.size.x, th)));
                     }
                     break;
                 }
                 case View::UI::ToolType::DynamicBody: {
+                    View::UI::DynamicBodySettings settings = bottomBar_.dynamicBodySettings_;
+                    sf::FloatRect area = selectionEnd();
+                    if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
+
+                    if (strcmp(settings.CalcModes[settings.currentCalcMode], "Mass") == 0) {
+                        engine_.spawnDynamicBody(area.size, area.position + sf::Vector2f(area.size.x/2, area.size.y/2), settings.mass);
+                    } else if (strcmp(settings.CalcModes[settings.currentCalcMode], "Density") == 0) {
+                        engine_.spawnDynamicBody(area.size, area.position + sf::Vector2f(area.size.x/2, area.size.y/2), settings.density*area.size.x*area.size.y);
+                    }
                     break;
                 }
                 }

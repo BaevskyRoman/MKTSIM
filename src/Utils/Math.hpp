@@ -16,6 +16,19 @@ namespace Utils::Math {
         return std::abs(a) < EPSILON;
     }
 
+    inline float cross(const sf::Vector2f& a, const sf::Vector2f& b) {
+        return a.x * b.y - a.y * b.x;
+    }
+
+    inline sf::Vector2f cross(float s, const sf::Vector2f& a) {
+        return sf::Vector2f(-s * a.y, s * a.x);
+    }
+
+    inline float dot(const sf::Vector2f& a, const sf::Vector2f& b) {
+        return a.x * b.x + a.y * b.y;
+    }
+
+
 class Random {
 public:
     Random() = delete;

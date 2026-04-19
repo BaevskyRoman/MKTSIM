@@ -12,4 +12,7 @@ namespace Config::Physics {
 
     constexpr float MIN_BOX_THICKNESS = 10.f;
     constexpr float MAX_BOX_THICNESS = 100.f;
+
+    constexpr bool GRAVITY = true;
+    constexpr float GRAVITY_ACCELERATION = 150.f;
 }
