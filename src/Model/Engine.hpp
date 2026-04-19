@@ -31,6 +31,13 @@ private:
     std::vector<Molecule> molecules_;
     std::vector<sf::FloatRect> staticBodies_;
     std::vector<DynamicBody> dynamicBodies_;
+
+    void handleCollision(Molecule& mol, const sf::FloatRect& body);
+    void handleCollision(Molecule& mol, DynamicBody& body);
+    void handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody);
+    void handleCollision(DynamicBody& bodyA, DynamicBody& bodyB);
+    void handleCollision(Molecule& mol1, Molecule& mol2);
+    void handleCollision();
 };
 
 }
