@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <random>
+#include <imgui.h>
 
 namespace Utils::Math {
 
@@ -28,6 +29,15 @@ namespace Utils::Math {
         return a.x * b.x + a.y * b.y;
     }
 
+    inline ImVec4 toImVec4(const sf::Color& color) {
+        return ImVec4(
+            static_cast<float>(color.r) / 255.0f,
+            static_cast<float>(color.g) / 255.0f,
+            static_cast<float>(color.b) / 255.0f,
+            static_cast<float>(color.a) / 255.0f
+        );
+    }
+    
 
 class Random {
 public:
@@ -46,5 +56,4 @@ public:
 private:
     inline static std::mt19937 generator_{std::random_device{}()};
 };
-
 }

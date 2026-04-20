@@ -12,14 +12,9 @@ AppController::AppController()
 {
     window_.setFramerateLimit(Config::Visual::FPS_LIMIT);
     
-    if (!bottomBar_.init(window_)) {
-        throw std::runtime_error("[AppController::AppController] Failed bottomBar init");
+    if (!manager_.init(window_)) {
+        throw std::runtime_error("[AppController::AppController] Failed UI Manager init");
     }
-}
-
-
-AppController::~AppController() { 
-    bottomBar_.shutdown(); 
 }
 
 
@@ -28,9 +23,9 @@ void AppController::run() {
     while (window_.isOpen()) {
         float deltaTime = clock.restart().asSeconds();
 
-        processEvents();
         update(deltaTime);
         render();
+        processEvents();
     }
 }
 
@@ -52,7 +47,7 @@ void AppController::processEvents() {
                 isDragging_ = true;
                 lastMousePos_ = e->position;
             } else if (e->button == sf::Mouse::Button::Left) {
-                switch (bottomBar_.getActiveTool()) {
+                switch (manager_.getActiveTool()) {
                 case View::UI::ToolType::Molecules:
                     selectionStart(e);
                     break;
@@ -76,17 +71,22 @@ void AppController::processEvents() {
                 if (!isSelecting_) continue;
                 if (ImGui::GetIO().WantCaptureMouse) continue;
 
-                switch (bottomBar_.getActiveTool()) {
+                switch (manager_.getActiveTool()) {
                 case View::UI::ToolType::Molecules: {
-                    View::UI::MoleculesSettings settings = bottomBar_.molSettings_;
+                    auto& settings = manager_.getToolSettings<View::UI::MoleculesSettings>();
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
-                    engine_.spawnMoleculesInArea(area, settings.concentration, 
+                    if (settings.currentQTYMode == 0) {
+                        engine_.spawnMoleculesInArea(area, settings.concentration, 
                                                 settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
+                    } else if (settings.currentQTYMode == 1) {
+                        engine_.spawnMoleculesInArea(area, settings.qty, 
+                                                settings.minSpeed, settings.maxSpeed, settings.mass, settings.radius);
+                    }
                     break;
                 }
                 case View::UI::ToolType::StaticBody: {
-                    View::UI::StaticBodySettings settings = bottomBar_.staticBodySettings_;
+                    auto& settings = manager_.getToolSettings<View::UI::StaticBodySettings>();
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
                     if (std::strcmp(settings.shapes[settings.currentShape], "Rectangle") == 0) {
@@ -103,13 +103,13 @@ void AppController::processEvents() {
                     break;
                 }
                 case View::UI::ToolType::DynamicBody: {
-                    View::UI::DynamicBodySettings settings = bottomBar_.dynamicBodySettings_;
+                    auto& settings = manager_.getToolSettings<View::UI::DynamicBodySettings>();
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
 
-                    if (strcmp(settings.CalcModes[settings.currentCalcMode], "Mass") == 0) {
+                    if (strcmp(settings.massModes[settings.currentMassMode], "Mass") == 0) {
                         engine_.spawnDynamicBody(area.size, area.position + sf::Vector2f(area.size.x/2, area.size.y/2), settings.mass);
-                    } else if (strcmp(settings.CalcModes[settings.currentCalcMode], "Density") == 0) {
+                    } else if (strcmp(settings.massModes[settings.currentMassMode], "Density") == 0) {
                         engine_.spawnDynamicBody(area.size, area.position + sf::Vector2f(area.size.x/2, area.size.y/2), settings.density*area.size.x*area.size.y);
                     }
                     break;
@@ -158,7 +158,7 @@ void AppController::processEvents() {
 
 
 void AppController::update(float deltaTime) {
-    bottomBar_.update(window_, sf::seconds(deltaTime));
+    manager_.update(window_, sf::seconds(deltaTime));
     engine_.update(deltaTime);
 }
 
@@ -169,7 +169,7 @@ void AppController::render() {
     if (isSelecting_) {
         renderer_.drawSelection(window_, selectionStartPos_, selectionEndPos_);
     }
-    bottomBar_.render(window_);
+    manager_.render(window_);
     window_.display();
 }
 

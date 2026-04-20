@@ -485,12 +485,8 @@ void Engine::handleCollision(Molecule& m1, Molecule& m2) {
 }
 
 
-void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, 
+void Engine::spawnMoleculesInArea(const sf::FloatRect& area, int count, 
                         float min_speed, float max_speed, float mass, float radius) {
-    float areaSize = (area.size.x - 2*radius) * (area.size.y - 2*radius);
-    float maxMolecules = areaSize / (4.0f * radius * radius);
-    int count = static_cast<int>(maxMolecules * concentration);
-    
     for (int i = 0; i < count; ++i) {
         float px = Utils::Math::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
         float py = Utils::Math::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
@@ -505,8 +501,12 @@ void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration
 }
 
 
-void Engine::spawnMolecule(float x, float y, float vx, float vy) {
-    molecules_.push_back({sf::Vector2f(x, y), sf::Vector2f(vx, vy)});
+void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float min_speed, float max_speed, 
+                                float mass, float radius) {
+    float areaSize = (area.size.x - 2*radius) * (area.size.y - 2*radius);
+    float maxMolecules = areaSize / (4.0f * radius * radius);
+    int count = static_cast<int>(maxMolecules * concentration);
+    spawnMoleculesInArea(area, count, min_speed, max_speed, mass, radius);
 }
 
 }

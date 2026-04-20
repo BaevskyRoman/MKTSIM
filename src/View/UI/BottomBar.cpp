@@ -1,32 +1,15 @@
 #include "View/UI/BottomBar.hpp"
 #include "Config/VisualConfig.hpp"
 #include <cstring>
+#include <Utils/Math.hpp>
 
 
 namespace View {
 namespace UI {
 
-
-bool BottomBar::init(sf::RenderWindow& window) {
-    return ImGui::SFML::Init(window);
-}
-
-
-void BottomBar::shutdown() {
-    ImGui::SFML::Shutdown();
-}
-
-
-void BottomBar::update(sf::RenderWindow& window, sf::Time dt) {
-    ImGui::SFML::Update(window, dt);
-
+void BottomBar::update(sf::RenderWindow& window) {
     drawBottomBar(window);
     drawToolSettings();
-}
-
-
-void BottomBar::render(sf::RenderWindow& window) {
-    ImGui::SFML::Render(window);
 }
 
 
@@ -43,6 +26,9 @@ void BottomBar::drawBottomBar(const sf::RenderWindow& window) {
 
     ImGui::Begin("BottomBar", nullptr, windowFlags);
 
+    float verticalPadding = (ImGui::GetWindowHeight() - Config::Visual::BUTTON_HEIGHT) * 0.5f;
+    ImGui::SetCursorPosY(verticalPadding);
+
     drawToolButton("Molecules", ToolType::Molecules);
     ImGui::SameLine();
     drawToolButton("StaticBody", ToolType::StaticBody);
@@ -57,9 +43,9 @@ void BottomBar::drawToolButton(const char* label, ToolType tool) {
     bool isSelected = (activeTool_ == tool);
 
     if (isSelected) {
-        ImGui::PushStyleColor(ImGuiCol_Button, toImVec4(Config::Visual::ACTIVE_BUTTON_COLOR));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, toImVec4(Config::Visual::ACTIVE_BUTTON_HOVER_COLOR));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, toImVec4(Config::Visual::ACTIVE_BUTTON_CLICK_COLOR));
+        ImGui::PushStyleColor(ImGuiCol_Button, Utils::Math::toImVec4(Config::Visual::ACTIVE_BUTTON_COLOR));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Utils::Math::toImVec4(Config::Visual::ACTIVE_BUTTON_HOVER_COLOR));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, Utils::Math::toImVec4(Config::Visual::ACTIVE_BUTTON_CLICK_COLOR));
     }
 
     if (ImGui::Button(label, ImVec2(Config::Visual::BUTTON_WIDTH, Config::Visual::BUTTON_HEIGHT))) {
@@ -78,43 +64,138 @@ void BottomBar::drawToolButton(const char* label, ToolType tool) {
 
 void BottomBar::drawToolSettings() {
     if (!showToolSettings_) return;
-
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize;
+    if (!ImGui::Begin("Tool Settings", &showToolSettings_, flags)) {
+        ImGui::End();
+        return;
+    }
 
     switch (activeTool_) {
     case ToolType::Molecules:
-        if (ImGui::Begin("Molecules Settings", &showToolSettings_, flags)) {
-        ImGui::Combo("Shape", &molSettings_.currentShape, molSettings_.shapes, IM_ARRAYSIZE(molSettings_.shapes));
 
+        // --- SHAPE ---
+        ImGui::Text("Shape");
+        ImGui::RadioButton(molSettings_.shapes[0], &molSettings_.currentShape, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton(molSettings_.shapes[1], &molSettings_.currentShape, 1);
+        ImGui::SameLine();
+        ImGui::RadioButton(molSettings_.shapes[2], &molSettings_.currentShape, 2);
         ImGui::Separator();
 
-        ImGui::SliderFloat("Concentration", &molSettings_.concentration, 0.0f, 1.0f, "%.2f");
+        // --- QTY MODE ---
+        if (ImGui::BeginTable("Settings Table", 2, ImGuiTableFlags_SizingStretchProp)) {
+            // CONCENTRATION ROW
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::RadioButton(molSettings_.qtyModes[0], &molSettings_.currentQTYMode, 0);
+            
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::BeginDisabled(molSettings_.currentQTYMode != 0);
+            ImGui::SliderFloat("##concentration", &molSettings_.concentration, 0.0f, 1.0f, "%.2f");
+            ImGui::EndDisabled();
 
+            // QTY ROW
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::RadioButton(molSettings_.qtyModes[1], &molSettings_.currentQTYMode, 1);
+            
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::BeginDisabled(molSettings_.currentQTYMode != 1);
+            ImGui::InputInt("##qty", &molSettings_.qty);
+            ImGui::EndDisabled();
+
+            ImGui::EndTable();
+        }
+        ImGui::Separator();
+
+        // --- SPEED ---
         ImGui::Text("Speed Range");
         ImGui::DragFloatRange2("##speed", &molSettings_.minSpeed, &molSettings_.maxSpeed, 1.0f, 0.0f, 1000.0f, "Min: %.1f", "Max: %.1f");
-        
         ImGui::Separator();
 
-        ImGui::SliderInt("Mass", &molSettings_.mass, Config::Physics::MIN_MOLECULE_MASS, Config::Physics::MAX_MOLECULE_MASS);
-        ImGui::SliderInt("Radius", &molSettings_.radius, Config::Physics::MIN_MOLECULE_RADIUS, Config::Physics::MAX_MOLECULE_RADIUS);
-        }
-        break;
-    case ToolType::StaticBody:
-        if (ImGui::Begin("StaticBody Settings", &showToolSettings_, flags)) {
-            ImGui::Combo("Shape", &staticBodySettings_.currentShape, staticBodySettings_.shapes, IM_ARRAYSIZE(staticBodySettings_.shapes));
-            if (staticBodySettings_.currentShape == 1) {
-                ImGui::SliderFloat("Thickness", &staticBodySettings_.thickness, Config::Physics::MIN_BOX_THICKNESS, 
-                                    Config::Physics::MAX_BOX_THICNESS, "%.1f");
+        // --- RADIUS ---
+        if (ImGui::SliderFloat("Radius", &molSettings_.radius, Config::Physics::MIN_MOLECULE_RADIUS, Config::Physics::MAX_MOLECULE_RADIUS)) {
+            if (strcmp(molSettings_.massModes[molSettings_.currentMassMode], "Mass")) {
+                molSettings_.density = molSettings_.mass / (molSettings_.radius * molSettings_.radius * Utils::Math::PI);
+            } else if (strcmp(molSettings_.massModes[molSettings_.currentMassMode], "Density")) {
+                molSettings_.mass = molSettings_.radius * molSettings_.radius * Utils::Math::PI * molSettings_.density;
             }
         }
+        ImGui::Separator();
+
+        // --- MASS ---
+        if (ImGui::BeginTable("Settings Table2", 2, ImGuiTableFlags_SizingStretchProp)) {
+            // MASS ROW
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::RadioButton(molSettings_.massModes[0], &molSettings_.currentMassMode, 0);
+            
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::BeginDisabled(molSettings_.currentMassMode != 0);
+            if (ImGui::SliderFloat("##mass", &molSettings_.mass, 0.0f, 1.0f, "%.2f")) {
+                molSettings_.density = molSettings_.mass / (molSettings_.radius * molSettings_.radius * Utils::Math::PI);
+            }
+            ImGui::EndDisabled();
+
+            // DENSITY
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::RadioButton(molSettings_.massModes[1], &molSettings_.currentMassMode, 1);
+            
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::BeginDisabled(molSettings_.currentMassMode != 1);
+            if (ImGui::SliderFloat("##ma7ss", &molSettings_.density, 0.0f, 1.0f, "%.2f")) {
+                molSettings_.mass = molSettings_.radius * molSettings_.radius * Utils::Math::PI * molSettings_.density;
+            }
+            ImGui::EndDisabled();
+
+            ImGui::EndTable();
+        }
+        
+        break;
+    case ToolType::StaticBody:
+        // --- SHAPE ---
+        ImGui::RadioButton(staticBodySettings_.shapes[0], &staticBodySettings_.currentShape, 0);
+        ImGui::SameLine();
+        ImGui::RadioButton(staticBodySettings_.shapes[1], &staticBodySettings_.currentShape, 1);
+
+        // --- THICKNESS ---
+        ImGui::BeginDisabled(staticBodySettings_.currentShape != 0);
+        ImGui::SliderFloat("Thickness", &staticBodySettings_.thickness, Config::Physics::MIN_BOX_THICKNESS, 
+            Config::Physics::MAX_BOX_THICNESS, "%.1f");
+        ImGui::EndDisabled();
+        
         break;
     case ToolType::DynamicBody:
-        (ImGui::Begin("DynamicBody Settings", &showToolSettings_, flags));
-        ImGui::Combo("CalcMode", &dynamicBodySettings_.currentCalcMode, dynamicBodySettings_.CalcModes, IM_ARRAYSIZE(dynamicBodySettings_.CalcModes));
-        if (strcmp(dynamicBodySettings_.CalcModes[dynamicBodySettings_.currentCalcMode], "Mass") == 0)
-            ImGui::SliderFloat("Mass", &dynamicBodySettings_.mass, 1, 1000);
-        else if (strcmp(dynamicBodySettings_.CalcModes[dynamicBodySettings_.currentCalcMode], "Density") == 0)
-            ImGui::SliderFloat("Density", &dynamicBodySettings_.density, 0, 1);
+        if (ImGui::BeginTable("Settings Table22", 2, ImGuiTableFlags_SizingStretchProp)) {
+            // DENSUTY ROW
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::RadioButton(dynamicBodySettings_.massModes[0], &dynamicBodySettings_.currentMassMode, 0);
+            
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(200);
+            ImGui::BeginDisabled(dynamicBodySettings_.currentMassMode != 0);
+            ImGui::SliderFloat("##mass", &dynamicBodySettings_.density, 0.0f, 1.0f, "%.2f");
+            ImGui::EndDisabled();
+
+            // MASS ROW
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::RadioButton(dynamicBodySettings_.massModes[1], &dynamicBodySettings_.currentMassMode, 1);
+            
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(200);
+            ImGui::BeginDisabled(dynamicBodySettings_.currentMassMode != 1);
+            ImGui::SliderFloat("##mas23s", &dynamicBodySettings_.mass, 0.0f, 1.0f, "%.2f");
+            ImGui::EndDisabled();
+
+            ImGui::EndTable();
+        }
         break;
     }
 

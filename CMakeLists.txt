@@ -15,6 +15,7 @@ set(IMGUI_SOURCES
     "${IMGUI_DIR}/imgui_tables.cpp"
     "${IMGUI_DIR}/imgui_widgets.cpp"
     "${IMGUI_DIR}/imgui-SFML.cpp"
+    "${IMGUI_DIR}/imgui_demo.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_SOURCES})

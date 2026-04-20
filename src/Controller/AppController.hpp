@@ -4,7 +4,7 @@
 
 #include "Model/Engine.hpp"
 #include "View/Renderer.hpp"
-#include "View/UI/BottomBar.hpp"
+#include "View/UI/Manager.hpp"
 
 
 namespace Controller {
@@ -12,7 +12,7 @@ namespace Controller {
 class AppController {
 public:
     AppController();
-    ~AppController();
+    ~AppController() = default;
 
     void run();
 
@@ -27,7 +27,7 @@ private:
     sf::RenderWindow window_;
     Model::Engine engine_;
     View::Renderer renderer_;
-    View::UI::BottomBar bottomBar_;
+    View::UI::Manager manager_;
 
     bool isDragging_ = false;
     sf::Vector2i lastMousePos_;
