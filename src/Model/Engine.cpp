@@ -52,12 +52,12 @@ void Engine::spawnDynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m) {
 
 void Engine::update(float deltaTime) {
     // --- GRAVITY ---
-    if (Config::Physics::GRAVITY) {
+    if (enableGravity) {
         for (auto& mol : molecules_) {
-            mol.velocity.y += Config::Physics::GRAVITY_ACCELERATION * deltaTime;
+            mol.velocity.y += gravityAcceleration * deltaTime;
         }
         for (auto& body : dynamicBodies_) {
-            body.velocity.y += Config::Physics::GRAVITY_ACCELERATION * deltaTime;
+            body.velocity.y += gravityAcceleration * deltaTime;
         }
     }
 

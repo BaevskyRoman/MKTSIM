@@ -3,7 +3,6 @@
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
 #include <imgui-SFML.h>
-#include "View/UI/BottomBar.hpp"
 #include "Config/PhysicsConfig.hpp"
 
 

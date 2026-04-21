@@ -4,6 +4,8 @@
 #include <imgui.h>
 #include <imgui-SFML.h>
 #include "View/UI/BottomBar.hpp"
+#include "View/UI/TopBar.hpp"
+#include "Model/Engine.hpp"
 
 
 namespace View {
@@ -12,6 +14,7 @@ namespace UI {
 class Manager {
 public:
     bool init(sf::RenderWindow& window);
+    Manager(Model::Engine& engine) : topBar_(engine) {}
     ~Manager();
 
     void update(sf::RenderWindow& window, sf::Time dt);
@@ -30,8 +33,11 @@ public:
         }
     }
 
+    bool bottomBarVisible_ = true, topBarVisible_ = true;
+
 private:
     BottomBar bottomBar_;
+    TopBar topBar_;
 };
 
 }

@@ -8,7 +8,8 @@ namespace Controller {
 AppController::AppController()
     : window_(sf::VideoMode({Config::Visual::WINDOW_WIDTH, Config::Visual::WINDOW_HEIGHT}), 
               Config::Visual::WINDOW_TITLE),
-    renderer_(Config::Visual::WINDOW_WIDTH, Config::Visual::WINDOW_HEIGHT)
+    renderer_(Config::Visual::WINDOW_WIDTH, Config::Visual::WINDOW_HEIGHT),
+    manager_(engine_)
 {
     window_.setFramerateLimit(Config::Visual::FPS_LIMIT);
     
@@ -149,6 +150,19 @@ void AppController::processEvents() {
                 } else if (e->delta < 0) {
                     renderer_.zoomCamera(1.1f);
                 }
+            }
+
+            continue;
+        }
+
+        // --- BARS HIDING (T, B) ---
+        if (const auto* e = event->getIf<sf::Event::KeyPressed>()) {
+            if (ImGui::GetIO().WantCaptureKeyboard) continue;
+            
+            if (e->code == sf::Keyboard::Key::T) {
+                manager_.topBarVisible_ = !manager_.topBarVisible_;
+            } else if (e->code == sf::Keyboard::Key::B) {
+                manager_.bottomBarVisible_ = !manager_.bottomBarVisible_;
             }
 
             continue;

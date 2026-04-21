@@ -27,12 +27,15 @@ public:
 
     const std::vector<DynamicBody>& getDynamicBodies() const;
     void spawnDynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m);
+    
+    bool enableGravity = false;
+    float gravityAcceleration = 0;
 
 private:
     std::vector<Molecule> molecules_;
     std::vector<sf::FloatRect> staticBodies_;
     std::vector<DynamicBody> dynamicBodies_;
-
+    
     void handleCollision(Molecule& mol, const sf::FloatRect& body);
     void handleCollision(Molecule& mol, DynamicBody& body);
     void handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody);

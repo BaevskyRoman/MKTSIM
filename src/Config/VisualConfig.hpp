@@ -22,6 +22,7 @@ namespace Config::Visual {
 
 
     constexpr unsigned int BOTTOM_BAR_HEIGHT = 60;
+    constexpr unsigned int TOP_BAR_HEIGHT = 30;
     constexpr unsigned int BUTTON_WIDTH = 120;
     constexpr unsigned int BUTTON_HEIGHT = 40;
 

@@ -4,6 +4,7 @@
 namespace View {
 namespace UI {
 
+
 bool Manager::init(sf::RenderWindow& window) {
     return ImGui::SFML::Init(window);
 }
@@ -16,7 +17,8 @@ Manager::~Manager() {
 
 void Manager::update(sf::RenderWindow& window, sf::Time dt) {
     ImGui::SFML::Update(window, dt);
-    bottomBar_.update(window);
+    if (bottomBarVisible_) bottomBar_.update(window);
+    if (topBarVisible_) topBar_.update(window, dt);
     //ImGui::ShowDemoWindow();
 }
 
