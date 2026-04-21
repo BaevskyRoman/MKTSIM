@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SFML_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/SFML")
 set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/imgui")
+set(JSON_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/external/json")
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
@@ -24,6 +25,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     "${SFML_ROOT}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${IMGUI_DIR}"
+    "${JSON_DIR}"
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
