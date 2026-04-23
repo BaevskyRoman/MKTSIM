@@ -5,6 +5,7 @@
 #include "Model/Engine.hpp"
 #include "View/Renderer.hpp"
 #include "View/UI/Manager.hpp"
+#include "Model/FileHandler.hpp"
 
 
 namespace Controller {
@@ -28,6 +29,7 @@ private:
     Model::Engine engine_;
     View::Renderer renderer_;
     View::UI::Manager manager_;
+    Model::FileHandler fileHandler_;
 
     bool isDragging_ = false;
     sf::Vector2i lastMousePos_;

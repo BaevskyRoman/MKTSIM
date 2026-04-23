@@ -10,6 +10,7 @@ void TopBar::update(sf::RenderWindow& window, sf::Time dt) {
     drawTopBar(window);
     drawSimSettings(window);
     drawSimStats(window, dt);
+    drawFileManager(window);
 }
 
 
@@ -25,9 +26,11 @@ void TopBar::drawTopBar(sf::RenderWindow& window) {
         ImGuiWindowFlags_NoBringToFrontOnFocus;
 
     ImGui::Begin("TopBar", nullptr, windowFlags);
-    if (ImGui::Button("mmmm", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showSimSettings_ = !showSimSettings_;
+    if (ImGui::Button("SimSettings##B", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showSimSettings_ = !showSimSettings_;
     ImGui::SameLine();
-    if (ImGui::Button("mdasd", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showSimStats_ = !showSimStats_;
+    if (ImGui::Button("SimStats##B", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showSimStats_ = !showSimStats_;
+    ImGui::SameLine();
+    if (ImGui::Button("SimFileManager##B", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showFileManager_ = !showFileManager_;
     ImGui::End();
 }
 
@@ -54,8 +57,25 @@ void TopBar::drawSimStats(sf::RenderWindow& window, sf::Time dt) {
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Always);
     if (ImGui::Begin("Sim Stats", &showSimStats_)) {
         ImGui::LabelText("Molecules", "%zu J", engineRef_.getMolecules().size());
+        ImGui::LabelText("Molecules", "%f J", 1 / dt.asSeconds());
     }
-    ImGui::LabelText("Molecules", "%f J", 1 / dt.asSeconds());
+
+    ImGui::End();
+}
+
+
+void TopBar::drawFileManager(sf::RenderWindow& window) {
+    if (!showFileManager_) return;
+    ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Always);
+    if (ImGui::Begin("File Manager", &showFileManager_)) {
+        if (ImGui::Button("Save", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
+            fileHandler_.saveScene(engineRef_, "save.json");
+        }
+
+        if (ImGui::Button("Load", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
+            fileHandler_.loadScene(engineRef_, "save.json");
+        }
+    }
 
     ImGui::End();
 }

@@ -5,6 +5,7 @@
 #include <imgui-SFML.h>
 #include "Config/PhysicsConfig.hpp"
 #include "Model/Engine.hpp"
+#include "Model/FileHandler.hpp"
 
 
 namespace View {
@@ -19,10 +20,13 @@ private:
     void drawTopBar(sf::RenderWindow& window);
     void drawSimSettings(sf::RenderWindow& window);
     void drawSimStats(sf::RenderWindow& window, sf::Time dt);
+    void drawFileManager(sf::RenderWindow& window);
 
     bool showSimSettings_ = false;
     bool showSimStats_ = false;
+    bool showFileManager_ = false;
     Model::Engine& engineRef_;
+    Model::FileHandler fileHandler_;
 };
 
 }

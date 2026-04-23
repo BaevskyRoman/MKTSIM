@@ -15,7 +15,7 @@ struct DynamicBody {
     float angularVelocity;
 
     
-    DynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m) 
+    DynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m)
         : size(sz), position(pos), velocity(0.f, 0.f), mass(m), angle(0.f), angularVelocity(0.f)
     {
         inertia = (mass / 12.0f) * (size.x * size.x + size.y * size.y);

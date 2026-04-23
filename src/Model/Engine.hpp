@@ -30,7 +30,8 @@ public:
     
     bool enableGravity = false;
     float gravityAcceleration = 0;
-
+    
+    friend class FileHandler;
 private:
     std::vector<Molecule> molecules_;
     std::vector<sf::FloatRect> staticBodies_;
