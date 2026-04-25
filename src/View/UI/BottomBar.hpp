@@ -3,7 +3,6 @@
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
 #include <imgui-SFML.h>
-#include "Config/PhysicsConfig.hpp"
 
 
 namespace View {
@@ -28,7 +27,7 @@ struct MoleculesSettings {
     int qty = 0;
     float minSpeed = 0.0f;
     float maxSpeed = 200.0f;
-    float mass = Config::Physics::MIN_MOLECULE_MASS;
+    float mass = 1;
     float density = 1;
     float radius = 5;
 };

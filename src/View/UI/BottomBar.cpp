@@ -1,7 +1,7 @@
 #include "View/UI/BottomBar.hpp"
 #include "Config/VisualConfig.hpp"
+#include <Utils/Utils.hpp>
 #include <cstring>
-#include <Utils/Math.hpp>
 
 
 namespace View {
@@ -43,9 +43,9 @@ void BottomBar::drawToolButton(const char* label, ToolType tool) {
     bool isSelected = (activeTool_ == tool);
 
     if (isSelected) {
-        ImGui::PushStyleColor(ImGuiCol_Button, Utils::Math::toImVec4(Config::Visual::ACTIVE_BUTTON_COLOR));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Utils::Math::toImVec4(Config::Visual::ACTIVE_BUTTON_HOVER_COLOR));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, Utils::Math::toImVec4(Config::Visual::ACTIVE_BUTTON_CLICK_COLOR));
+        ImGui::PushStyleColor(ImGuiCol_Button, Utils::toImVec4(Config::Visual::ACTIVE_BUTTON_COLOR));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Utils::toImVec4(Config::Visual::ACTIVE_BUTTON_HOVER_COLOR));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, Utils::toImVec4(Config::Visual::ACTIVE_BUTTON_CLICK_COLOR));
     }
 
     if (ImGui::Button(label, ImVec2(Config::Visual::BUTTON_WIDTH, Config::Visual::BUTTON_HEIGHT))) {
@@ -116,11 +116,11 @@ void BottomBar::drawToolSettings() {
         ImGui::Separator();
 
         // --- RADIUS ---
-        if (ImGui::SliderFloat("Radius", &molSettings_.radius, Config::Physics::MIN_MOLECULE_RADIUS, Config::Physics::MAX_MOLECULE_RADIUS)) {
+        if (ImGui::SliderFloat("Radius", &molSettings_.radius, 1, 10)) {
             if (strcmp(molSettings_.massModes[molSettings_.currentMassMode], "Mass")) {
-                molSettings_.density = molSettings_.mass / (molSettings_.radius * molSettings_.radius * Utils::Math::PI);
+                molSettings_.density = molSettings_.mass / (molSettings_.radius * molSettings_.radius * Utils::PI);
             } else if (strcmp(molSettings_.massModes[molSettings_.currentMassMode], "Density")) {
-                molSettings_.mass = molSettings_.radius * molSettings_.radius * Utils::Math::PI * molSettings_.density;
+                molSettings_.mass = molSettings_.radius * molSettings_.radius * Utils::PI * molSettings_.density;
             }
         }
         ImGui::Separator();
@@ -136,7 +136,7 @@ void BottomBar::drawToolSettings() {
             ImGui::SetNextItemWidth(-FLT_MIN);
             ImGui::BeginDisabled(molSettings_.currentMassMode != 0);
             if (ImGui::SliderFloat("##mass", &molSettings_.mass, 0.0f, 1.0f, "%.2f")) {
-                molSettings_.density = molSettings_.mass / (molSettings_.radius * molSettings_.radius * Utils::Math::PI);
+                molSettings_.density = molSettings_.mass / (molSettings_.radius * molSettings_.radius * Utils::PI);
             }
             ImGui::EndDisabled();
 
@@ -149,7 +149,7 @@ void BottomBar::drawToolSettings() {
             ImGui::SetNextItemWidth(-FLT_MIN);
             ImGui::BeginDisabled(molSettings_.currentMassMode != 1);
             if (ImGui::SliderFloat("##ma7ss", &molSettings_.density, 0.0f, 1.0f, "%.2f")) {
-                molSettings_.mass = molSettings_.radius * molSettings_.radius * Utils::Math::PI * molSettings_.density;
+                molSettings_.mass = molSettings_.radius * molSettings_.radius * Utils::PI * molSettings_.density;
             }
             ImGui::EndDisabled();
 
@@ -165,8 +165,7 @@ void BottomBar::drawToolSettings() {
 
         // --- THICKNESS ---
         ImGui::BeginDisabled(staticBodySettings_.currentShape != 0);
-        ImGui::SliderFloat("Thickness", &staticBodySettings_.thickness, Config::Physics::MIN_BOX_THICKNESS, 
-            Config::Physics::MAX_BOX_THICNESS, "%.1f");
+        ImGui::SliderFloat("Thickness", &staticBodySettings_.thickness, 10, 100, "%.1f");
         ImGui::EndDisabled();
         
         break;

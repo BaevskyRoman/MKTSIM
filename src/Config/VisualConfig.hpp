@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics/Color.hpp>
 
+
 namespace Config::Visual {
 
     constexpr const char* WINDOW_TITLE = "MKTSIM";
@@ -26,8 +27,7 @@ namespace Config::Visual {
     constexpr unsigned int BUTTON_WIDTH = 120;
     constexpr unsigned int BUTTON_HEIGHT = 40;
 
-
-    inline const sf::Color ACTIVE_BUTTON_COLOR       = sf::Color(38, 115, 217);
+    inline const sf::Color ACTIVE_BUTTON_COLOR = sf::Color(38, 115, 217);
     inline const sf::Color ACTIVE_BUTTON_HOVER_COLOR = sf::Color(64, 140, 242);
     inline const sf::Color ACTIVE_BUTTON_CLICK_COLOR = sf::Color(25, 89, 191);
 }

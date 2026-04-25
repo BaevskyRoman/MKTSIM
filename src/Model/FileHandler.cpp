@@ -19,6 +19,7 @@ bool FileHandler::saveScene(const Engine& engine, const std::string& filepath) {
     return true;
 }
 
+
 bool FileHandler::loadScene(Engine& engine, const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) return false;
@@ -63,4 +64,5 @@ bool FileHandler::loadScene(Engine& engine, const std::string& filepath) {
         return false;
     }
 }
+
 }

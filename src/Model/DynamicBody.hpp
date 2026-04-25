@@ -21,6 +21,7 @@ struct DynamicBody {
         inertia = (mass / 12.0f) * (size.x * size.x + size.y * size.y);
     }
 
+    
     void move(float deltaTime) {
         position += velocity * deltaTime;
         angle += angularVelocity * deltaTime;

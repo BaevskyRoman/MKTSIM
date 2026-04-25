@@ -1,9 +1,10 @@
-#include <cmath>
-#include <algorithm>
 #include "Model/Engine.hpp"
 #include "Config/VisualConfig.hpp"
-#include "Utils/Math.hpp"
+#include "Utils/Utils.hpp"
+#include <cmath>
+#include <algorithm>
 #include <limits>
+
 
 namespace {
     void getVertices(const Model::DynamicBody& body, sf::Vector2f out[4]) {
@@ -21,6 +22,7 @@ namespace {
         }
     }
 
+
     void getVertices(const sf::FloatRect& rect, sf::Vector2f out[4]) {
         out[0] = sf::Vector2f(rect.position.x, rect.position.y);
         out[1] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
@@ -28,15 +30,17 @@ namespace {
         out[3] = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y);
     }
 
+
     void project(const sf::Vector2f vertices[4], const sf::Vector2f& axis, float& min, float& max) {
-        min = max = Utils::Math::dot(vertices[0], axis);
+        min = max = Utils::dot(vertices[0], axis);
         for (int i = 1; i < 4; ++i) {
-            float proj = Utils::Math::dot(vertices[i], axis);
+            float proj = Utils::dot(vertices[i], axis);
             if (proj < min) min = proj;
             if (proj > max) max = proj;
         }
     }
 }
+
 
 namespace Model {
 
@@ -215,15 +219,15 @@ void Engine::handleCollision(Molecule& mol, DynamicBody& body) {
 
         sf::Vector2f rBody = worldContactPoint - body.position;
         
-        sf::Vector2f vBodyPoint = body.velocity + Utils::Math::cross(body.angularVelocity, rBody);
+        sf::Vector2f vBodyPoint = body.velocity + Utils::cross(body.angularVelocity, rBody);
         sf::Vector2f vMolPoint = mol.velocity;
 
         sf::Vector2f relativeVelocity = vMolPoint - vBodyPoint;
-        float velAlongNormal = Utils::Math::dot(relativeVelocity, worldNormal);
+        float velAlongNormal = Utils::dot(relativeVelocity, worldNormal);
 
         if (velAlongNormal < 0) {
             float e = 1.0f;
-            float rBodyCrossN = Utils::Math::cross(rBody, worldNormal);
+            float rBodyCrossN = Utils::cross(rBody, worldNormal);
             float invInertiaBody = 1.0f / body.inertia;
 
             float j = -(1.0f + e) * velAlongNormal;
@@ -280,7 +284,7 @@ void Engine::handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody) {
             sBody.position.y + sBody.size.y / 2.0f
         );
         sf::Vector2f direction = dBody.position - staticCenter;
-        if (Utils::Math::dot(direction, collisionNormal) < 0) {
+        if (Utils::dot(direction, collisionNormal) < 0) {
             collisionNormal = -collisionNormal;
         }
 
@@ -289,9 +293,9 @@ void Engine::handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody) {
         getVertices(dBody, dynVerts);
 
         sf::Vector2f contactPoint = dynVerts[0];
-        float minProj = Utils::Math::dot(dynVerts[0], collisionNormal);
+        float minProj = Utils::dot(dynVerts[0], collisionNormal);
         for (int i = 1; i < 4; ++i) {
-            float proj = Utils::Math::dot(dynVerts[i], collisionNormal);
+            float proj = Utils::dot(dynVerts[i], collisionNormal);
             if (proj < minProj) {
                 minProj = proj;
                 contactPoint = dynVerts[i];
@@ -300,13 +304,13 @@ void Engine::handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody) {
 
         sf::Vector2f rBody = contactPoint - dBody.position;
         
-        sf::Vector2f vBodyPoint = dBody.velocity + Utils::Math::cross(dBody.angularVelocity, rBody);
+        sf::Vector2f vBodyPoint = dBody.velocity + Utils::cross(dBody.angularVelocity, rBody);
         
-        float velAlongNormal = Utils::Math::dot(vBodyPoint, collisionNormal);
+        float velAlongNormal = Utils::dot(vBodyPoint, collisionNormal);
         
         if (velAlongNormal < 0) {
             float e = 1.f;
-            float rBodyCrossN = Utils::Math::cross(rBody, collisionNormal);
+            float rBodyCrossN = Utils::cross(rBody, collisionNormal);
             
             float invMassBody = 1.0f / dBody.mass;
             float invInertiaBody = 1.0f / dBody.inertia;
@@ -366,7 +370,7 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
     if (isColliding) {
         // 2. Убеждаемся, что нормаль направлена от A к B
         sf::Vector2f direction = bodyB.position - bodyA.position;
-        if (Utils::Math::dot(direction, collisionNormal) < 0) {
+        if (Utils::dot(direction, collisionNormal) < 0) {
             collisionNormal = -collisionNormal;
         }
 
@@ -385,9 +389,9 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
         // 4. Поиск Точки Контакта (Эвристика для OBB)
         // Ищем вершину тела A, которая глубже всего проникла по направлению нормали
         sf::Vector2f contactA = vertsA[0];
-        float maxProjA = Utils::Math::dot(vertsA[0], collisionNormal);
+        float maxProjA = Utils::dot(vertsA[0], collisionNormal);
         for (int k = 1; k < 4; ++k) {
-            float proj = Utils::Math::dot(vertsA[k], collisionNormal);
+            float proj = Utils::dot(vertsA[k], collisionNormal);
             if (proj > maxProjA) {
                 maxProjA = proj;
                 contactA = vertsA[k];
@@ -396,9 +400,9 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
 
         // Ищем вершину тела B, которая глубже всего проникла ПРОТИВ нормали
         sf::Vector2f contactB = vertsB[0];
-        float maxProjB = Utils::Math::dot(vertsB[0], -collisionNormal);
+        float maxProjB = Utils::dot(vertsB[0], -collisionNormal);
         for (int k = 1; k < 4; ++k) {
-            float proj = Utils::Math::dot(vertsB[k], -collisionNormal);
+            float proj = Utils::dot(vertsB[k], -collisionNormal);
             if (proj > maxProjB) {
                 maxProjB = proj;
                 contactB = vertsB[k];
@@ -413,19 +417,19 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
         sf::Vector2f rB = contactPoint - bodyB.position;
 
         // Линейные скорости точек контакта с учетом вращения
-        sf::Vector2f vA_point = bodyA.velocity + Utils::Math::cross(bodyA.angularVelocity, rA);
-        sf::Vector2f vB_point = bodyB.velocity + Utils::Math::cross(bodyB.angularVelocity, rB);
+        sf::Vector2f vA_point = bodyA.velocity + Utils::cross(bodyA.angularVelocity, rA);
+        sf::Vector2f vB_point = bodyB.velocity + Utils::cross(bodyB.angularVelocity, rB);
 
         // Относительная скорость (насколько быстро точка B движется относительно точки A)
         sf::Vector2f relativeVelocity = vB_point - vA_point;
-        float velAlongNormal = Utils::Math::dot(relativeVelocity, collisionNormal);
+        float velAlongNormal = Utils::dot(relativeVelocity, collisionNormal);
 
         // Если тела двигаются навстречу друг другу
         if (velAlongNormal < 0) {
             float e = 1.0f; // Абсолютно упругий отскок
             
-            float rAcrossN = Utils::Math::cross(rA, collisionNormal);
-            float rBcrossN = Utils::Math::cross(rB, collisionNormal);
+            float rAcrossN = Utils::cross(rA, collisionNormal);
+            float rBcrossN = Utils::cross(rB, collisionNormal);
 
             float invInertiaA = 1.0f / bodyA.inertia;
             float invInertiaB = 1.0f / bodyB.inertia;
@@ -461,8 +465,8 @@ void Engine::handleCollision(Molecule& m1, Molecule& m2) {
         
         sf::Vector2f normal;
         float overlap;
-        if (Utils::Math::isZero(distance)) {
-            float angle = Utils::Math::Random::getFloat(0.0f, 2.0f * Utils::Math::PI);
+        if (Utils::isZero(distance)) {
+            float angle = Utils::Random::getFloat(0.0f, 2.0f * Utils::PI);
             normal = {std::cos(angle), std::sin(angle)};
             overlap = minDist;
         }
@@ -488,10 +492,10 @@ void Engine::handleCollision(Molecule& m1, Molecule& m2) {
 void Engine::spawnMoleculesInArea(const sf::FloatRect& area, int count, 
                         float min_speed, float max_speed, float mass, float radius) {
     for (int i = 0; i < count; ++i) {
-        float px = Utils::Math::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
-        float py = Utils::Math::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
-        float angle = Utils::Math::Random::getFloat(0.0f, 2.0f * Utils::Math::PI);
-        float speed = Utils::Math::Random::getFloat(min_speed, max_speed);
+        float px = Utils::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
+        float py = Utils::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
+        float angle = Utils::Random::getFloat(0.0f, 2.0f * Utils::PI);
+        float speed = Utils::Random::getFloat(min_speed, max_speed);
         
         float vx = std::cos(angle) * speed;
         float vy = std::sin(angle) * speed;

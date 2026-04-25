@@ -1,11 +1,10 @@
 #pragma once
 
+#include "Model/Engine.hpp"
+#include "Model/FileHandler.hpp"
 #include <SFML/Graphics.hpp>
 #include <imgui.h>
 #include <imgui-SFML.h>
-#include "Config/PhysicsConfig.hpp"
-#include "Model/Engine.hpp"
-#include "Model/FileHandler.hpp"
 
 
 namespace View {

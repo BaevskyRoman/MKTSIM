@@ -2,7 +2,7 @@
 #include "Model/Engine.hpp"
 #include "Model/Molecule.hpp"
 #include "Config/VisualConfig.hpp"
-#include "Utils/Math.hpp"
+#include "Utils/Utils.hpp"
 #include <cmath>
 
 
@@ -97,7 +97,7 @@ void Renderer::drawSelection(sf::RenderWindow& window, const sf::Vector2f& start
 void Renderer::initUnitCircle(int points) {
     unitCircle_.reserve(points + 1);
     for (int i = 0; i <= points; ++i) {
-        float angle = i * 2.0f * Utils::Math::PI / points;
+        float angle = i * 2.0f * Utils::PI / points;
         unitCircle_.push_back(sf::Vector2f(std::cos(angle), std::sin(angle)));
     }
 }

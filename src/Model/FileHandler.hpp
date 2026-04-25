@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Model/Engine.hpp"
+#include "Model/Molecule.hpp"
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/System/Vector2.hpp>
-#include "Model/Molecule.hpp"
 #include <string>
 #include <json.hpp>
 
@@ -16,8 +16,6 @@ class FileHandler {
 public:
     static bool saveScene(const Engine& engine, const std::string& filepath);
     static bool loadScene(Engine& engine, const std::string& filepath);
-
-private:
 };
 }
 
@@ -35,7 +33,6 @@ inline void from_json(const json& j, Vector2f& v) {
     j.at("x").get_to(v.x);
     j.at("y").get_to(v.y);
 }
-
 
 // --- FLOAT RECT ---
 inline void to_json(json& j, const FloatRect& r) {
@@ -73,7 +70,6 @@ inline void from_json(const json& j, Molecule& m) {
     j.at("mass").get_to(m.mass);
     j.at("radius").get_to(m.radius);
 }
-
 
 // --- DYNAMIC BODY ---
 inline void to_json(json& j, const DynamicBody& b) {

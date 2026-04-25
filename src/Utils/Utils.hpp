@@ -1,10 +1,11 @@
 #pragma once
 
+#include <SFML/Graphics.hpp>
 #include <cmath>
 #include <random>
 #include <imgui.h>
 
-namespace Utils::Math {
+namespace Utils {
 
     constexpr float EPSILON = 0.0001f;
     constexpr float PI = 3.14159265f;
@@ -45,11 +46,6 @@ public:
 
     static float getFloat(float min, float max) {
         std::uniform_real_distribution<float> dist(min, max);
-        return dist(generator_);
-    }
-
-    static int getInt(int min, int max) {
-        std::uniform_int_distribution<int> dist(min, max);
         return dist(generator_);
     }
 

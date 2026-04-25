@@ -31,6 +31,23 @@ void AppController::run() {
 }
 
 
+void AppController::update(float deltaTime) {
+    manager_.update(window_, sf::seconds(deltaTime));
+    engine_.update(deltaTime);
+}
+
+
+void AppController::render() {
+    window_.clear(Config::Visual::BG_COLOR);
+    renderer_.draw(window_, engine_);
+    if (isSelecting_) {
+        renderer_.drawSelection(window_, selectionStartPos_, selectionEndPos_);
+    }
+    manager_.render(window_);
+    window_.display();
+}
+
+
 void AppController::processEvents() {
     while (const std::optional<sf::Event> event = window_.pollEvent()) {
         ImGui::SFML::ProcessEvent(window_, *event);
@@ -171,23 +188,6 @@ void AppController::processEvents() {
 }
 
 
-void AppController::update(float deltaTime) {
-    manager_.update(window_, sf::seconds(deltaTime));
-    engine_.update(deltaTime);
-}
-
-
-void AppController::render() {
-    window_.clear(Config::Visual::BG_COLOR);
-    renderer_.draw(window_, engine_);
-    if (isSelecting_) {
-        renderer_.drawSelection(window_, selectionStartPos_, selectionEndPos_);
-    }
-    manager_.render(window_);
-    window_.display();
-}
-
-
 void AppController::selectionStart(const sf::Event::MouseButtonPressed* e) {
     isSelecting_ = true;
     selectionStartPos_ = window_.mapPixelToCoords(e->position, renderer_.getCamera());
@@ -205,4 +205,5 @@ sf::FloatRect AppController::selectionEnd() {
     
     return sf::FloatRect(sf::Vector2f(left, top), sf::Vector2f(width, height));
 }
+
 }

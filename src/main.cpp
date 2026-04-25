@@ -2,10 +2,10 @@
 #include <iostream>
 #include <exception>
 
+
 int main() {
     try {
         Controller::AppController app;
-        
         app.run();
         
     } catch (const std::exception& e) {

@@ -1,26 +1,25 @@
 #pragma once
 
-#include <SFML/System/Vector2.hpp>
-#include <SFML/Graphics/Rect.hpp>
-#include <vector>
 #include "Model/Molecule.hpp"
 #include "Model/DynamicBody.hpp"
+#include <SFML/Graphics/Rect.hpp>
+#include <vector>
+#include <SFML/System/Vector2.hpp>
 
 
 namespace Model {
 
 class Engine {
 public:
-    Engine() = default;
-    ~Engine() = default;
-
     void update(float deltaTime);
 
     const std::vector<Molecule>& getMolecules() const;
-    void spawnMoleculesInArea(const sf::FloatRect& area, int count, float min_speed, float max_speed, 
-                                float mass, float radius);
-    void spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float min_speed, float max_speed, 
-                                float mass, float radius);
+    void spawnMoleculesInArea(
+        const sf::FloatRect& area, int count, float min_speed, float max_speed, float mass, float radius
+    );
+    void spawnMoleculesInArea(
+        const sf::FloatRect& area, float concentration, float min_speed, float max_speed, float mass, float radius
+    );
 
     const std::vector<sf::FloatRect>& getStaticBodies() const;
     void spawnStaticBody(const sf::FloatRect& rect);
