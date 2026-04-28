@@ -14,8 +14,10 @@ namespace Model {
 
 class FileHandler {
 public:
-    static bool saveScene(const Engine& engine, const std::string& filepath);
-    static bool loadScene(Engine& engine, const std::string& filepath);
+    static bool saveScene(const Engine& engine, const std::string& filename);
+    static bool loadScene(Engine& engine, const std::string& filemame);
+    
+    static std::vector<std::string> getFilesInFolder(const std::string& path);
 };
 }
 

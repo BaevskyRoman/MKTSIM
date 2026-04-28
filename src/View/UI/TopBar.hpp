@@ -16,13 +16,11 @@ public:
     void update(sf::RenderWindow& window, sf::Time dt);
 
 private:
-    void drawTopBar(sf::RenderWindow& window);
+    void drawTopBar(sf::RenderWindow& window, sf::Time dt);
     void drawSimSettings(sf::RenderWindow& window);
-    void drawSimStats(sf::RenderWindow& window, sf::Time dt);
     void drawFileManager(sf::RenderWindow& window);
 
     bool showSimSettings_ = false;
-    bool showSimStats_ = false;
     bool showFileManager_ = false;
     Model::Engine& engineRef_;
     Model::FileHandler fileHandler_;

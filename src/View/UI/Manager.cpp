@@ -19,7 +19,6 @@ void Manager::update(sf::RenderWindow& window, sf::Time dt) {
     ImGui::SFML::Update(window, dt);
     if (bottomBarVisible_) bottomBar_.update(window);
     if (topBarVisible_) topBar_.update(window, dt);
-    //ImGui::ShowDemoWindow();
 }
 
 

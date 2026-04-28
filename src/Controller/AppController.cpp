@@ -49,6 +49,8 @@ void AppController::render() {
 
 
 void AppController::processEvents() {
+    View::UI::ToolSettings overallSettings = manager_.getToolSettings();
+
     while (const std::optional<sf::Event> event = window_.pollEvent()) {
         ImGui::SFML::ProcessEvent(window_, *event);
 
@@ -65,7 +67,7 @@ void AppController::processEvents() {
                 isDragging_ = true;
                 lastMousePos_ = e->position;
             } else if (e->button == sf::Mouse::Button::Left) {
-                switch (manager_.getActiveTool()) {
+                switch (manager_.getToolSettings().activeTool) {
                 case View::UI::ToolType::Molecules:
                     selectionStart(e);
                     break;
@@ -89,9 +91,9 @@ void AppController::processEvents() {
                 if (!isSelecting_) continue;
                 if (ImGui::GetIO().WantCaptureMouse) continue;
 
-                switch (manager_.getActiveTool()) {
+                switch (overallSettings.activeTool) {
                 case View::UI::ToolType::Molecules: {
-                    auto& settings = manager_.getToolSettings<View::UI::MoleculesSettings>();
+                    View::UI::MoleculesSettings& settings = overallSettings.mol;
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
                     if (settings.currentQTYMode == 0) {
@@ -104,7 +106,7 @@ void AppController::processEvents() {
                     break;
                 }
                 case View::UI::ToolType::StaticBody: {
-                    auto& settings = manager_.getToolSettings<View::UI::StaticBodySettings>();
+                    View::UI::StaticBodySettings& settings = overallSettings.bodyS;
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
                     if (std::strcmp(settings.shapes[settings.currentShape], "Rectangle") == 0) {
@@ -121,7 +123,7 @@ void AppController::processEvents() {
                     break;
                 }
                 case View::UI::ToolType::DynamicBody: {
-                    auto& settings = manager_.getToolSettings<View::UI::DynamicBodySettings>();
+                    View::UI::DynamicBodySettings& settings = overallSettings.bodyD;
                     sf::FloatRect area = selectionEnd();
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
 

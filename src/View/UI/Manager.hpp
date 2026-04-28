@@ -20,18 +20,7 @@ public:
     void update(sf::RenderWindow& window, sf::Time dt);
     void render(sf::RenderWindow& window);
 
-    View::UI::ToolType getActiveTool() { return bottomBar_.activeTool_; }
-
-    template <typename T>
-    T& getToolSettings() {
-        if constexpr (std::is_same_v<T, View::UI::MoleculesSettings>) {
-            return bottomBar_.molSettings_;
-        } else if constexpr (std::is_same_v<T, View::UI::StaticBodySettings>) {
-            return bottomBar_.staticBodySettings_;
-        } else if constexpr (std::is_same_v<T, View::UI::DynamicBodySettings>) {
-            return bottomBar_.dynamicBodySettings_;
-        }
-    }
+    ToolSettings& getToolSettings() { return bottomBar_.settings; }
 
     bool bottomBarVisible_ = true, topBarVisible_ = true;
 

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <random>
 #include <imgui.h>
+#include <filesystem>
 
 namespace Utils {
 
@@ -52,4 +53,17 @@ public:
 private:
     inline static std::mt19937 generator_{std::random_device{}()};
 };
+}
+
+
+namespace View {
+namespace UI {
+    inline void makeRadioSwitch(const char *name, const char **options, int& current) {
+        ImGui::Text("%s", name);
+        for (int i = 0; options[i] != nullptr; i++) {
+            if (i != 0) ImGui::SameLine();
+            ImGui::RadioButton(options[i], &current, i);
+        }
+    }
+}
 }

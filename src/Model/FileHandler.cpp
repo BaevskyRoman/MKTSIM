@@ -1,10 +1,11 @@
 #include "Model/FileHandler.hpp"
 #include <fstream>
+#include <filesystem>
 
 
 namespace Model {
 
-bool FileHandler::saveScene(const Engine& engine, const std::string& filepath) {
+bool FileHandler::saveScene(const Engine& engine, const std::string& filename) {
     json j;
     j["enableGravity"] = engine.enableGravity;
     j["gravityAcceleration"] = engine.gravityAcceleration;
@@ -12,7 +13,8 @@ bool FileHandler::saveScene(const Engine& engine, const std::string& filepath) {
     j["staticBodies"] = engine.getStaticBodies();
     j["dynamicBodies"] = engine.getDynamicBodies();
 
-    std::ofstream file(filepath);
+    std::filesystem::create_directory("saves");
+    std::ofstream file("saves/" + filename + ".json");
     if (!file.is_open()) return false;
 
     file << j.dump(4);
@@ -20,8 +22,8 @@ bool FileHandler::saveScene(const Engine& engine, const std::string& filepath) {
 }
 
 
-bool FileHandler::loadScene(Engine& engine, const std::string& filepath) {
-    std::ifstream file(filepath);
+bool FileHandler::loadScene(Engine& engine, const std::string& filename) {
+    std::ifstream file("saves/" + filename + ".json");
     if (!file.is_open()) return false;
 
     json j;
@@ -63,6 +65,22 @@ bool FileHandler::loadScene(Engine& engine, const std::string& filepath) {
     } catch (json::exception& e) {
         return false;
     }
+}
+
+
+std::vector<std::string> FileHandler::getFilesInFolder(const std::string& path) {
+    std::vector<std::string> files;
+    if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+        for (const auto& entry : std::filesystem::directory_iterator(path)) {
+            if (entry.is_regular_file()) {
+                std::string fileName = entry.path().filename().string();
+                if (fileName.substr(fileName.length() - 5) == ".json") {
+                    files.push_back(fileName.erase(fileName.length() - 5));
+                }
+            }
+        }
+    }
+    return files;
 }
 
 }

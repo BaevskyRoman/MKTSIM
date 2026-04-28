@@ -35,16 +35,25 @@ struct MoleculesSettings {
 
 struct StaticBodySettings {
     int currentShape = 0;
-    const char* shapes[2] = {"Box", "Rectangle"};
+    const char* shapes[3] = {"Box", "Rectangle", nullptr};
     float thickness = 50.f;
 };
 
 
 struct DynamicBodySettings {
     int currentMassMode = 0;
-    const char* massModes[2] = {"Density", "Mass"};
+    const char* massModes[3] = {"Density", "Mass", nullptr};
     float mass = 10;
     float density = 10;
+};
+
+
+struct ToolSettings {
+    ToolType activeTool = ToolType::Molecules;
+    
+    MoleculesSettings mol;
+    StaticBodySettings bodyS;
+    DynamicBodySettings bodyD;
 };
 
 
@@ -52,14 +61,9 @@ class BottomBar {
 public:
     void update(sf::RenderWindow& window);
 
-
-    MoleculesSettings molSettings_;
-    StaticBodySettings staticBodySettings_;
-    DynamicBodySettings dynamicBodySettings_;
-
-    ToolType activeTool_ = ToolType::Molecules;
+    ToolSettings settings;
     bool showToolSettings_ = false;
-
+    
 private:
     void drawBottomBar(const sf::RenderWindow& window);
     void drawToolButton(const char* label, ToolType tool);
