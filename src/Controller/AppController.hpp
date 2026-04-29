@@ -2,6 +2,7 @@
 
 #include "Model/Engine.hpp"
 #include "Model/FileHandler.hpp"
+#include "Model/SimulationRecorder.hpp"
 #include "View/Renderer.hpp"
 #include "View/UI/Manager.hpp"
 #include <SFML/Graphics.hpp>
@@ -26,8 +27,20 @@ private:
     sf::RenderWindow window_;
     Model::Engine engine_;
     Model::FileHandler fileHandler_;
+    Model::SimulationRecorder recorder_;
     View::Renderer renderer_;
     View::UI::Manager manager_;
+
+    enum class AppMode {
+        Realtime,
+        Playback,
+        Recording
+    };
+    AppMode currentMode_ = AppMode::Realtime;
+    bool isPlaying = false;
+
+    void startBaking();
+    void startPlayback();
 
     bool isDragging_ = false;
     sf::Vector2i lastMousePos_;

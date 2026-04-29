@@ -31,6 +31,7 @@ public:
     float gravityAcceleration = 0;
     
     friend class FileHandler;
+    friend class SimulationRecorder;
 private:
     std::vector<Molecule> molecules_;
     std::vector<sf::FloatRect> staticBodies_;

@@ -1,6 +1,7 @@
 #include "Controller/AppController.hpp"
 #include "Config/VisualConfig.hpp"
 #include <cstring>
+#include <iostream>
 
 
 namespace Controller {
@@ -16,6 +17,9 @@ AppController::AppController()
     if (!manager_.init(window_)) {
         throw std::runtime_error("[AppController::AppController] Failed UI Manager init");
     }
+
+    manager_.setOnBake([this]() { this->startBaking(); });
+    manager_.setOnPlayback([this]() { this->startPlayback(); });
 }
 
 
@@ -33,7 +37,22 @@ void AppController::run() {
 
 void AppController::update(float deltaTime) {
     manager_.update(window_, sf::seconds(deltaTime));
-    engine_.update(deltaTime);
+
+    if (!isPlaying) return;
+    if (currentMode_ == AppMode::Realtime) {
+        engine_.update(deltaTime);
+    }
+    else if (currentMode_ == AppMode::Playback) {
+        if (!recorder_.playNextFrame(engine_)) {
+            currentMode_ = AppMode::Realtime;
+            isPlaying = false;
+            recorder_.stopPlayback();
+        }
+    }
+    else if (currentMode_ == AppMode::Recording) {
+        engine_.update(1.f/60);
+        recorder_.recordFrame(engine_);
+    }
 }
 
 
@@ -175,6 +194,7 @@ void AppController::processEvents() {
         }
 
         // --- BARS HIDING (T, B) ---
+        // --- STOP/PLAY (ENTER) ---
         if (const auto* e = event->getIf<sf::Event::KeyPressed>()) {
             if (ImGui::GetIO().WantCaptureKeyboard) continue;
             
@@ -182,6 +202,8 @@ void AppController::processEvents() {
                 manager_.topBarVisible_ = !manager_.topBarVisible_;
             } else if (e->code == sf::Keyboard::Key::B) {
                 manager_.bottomBarVisible_ = !manager_.bottomBarVisible_;
+            } else if (e->code == sf::Keyboard::Key::Enter) {
+                isPlaying = !isPlaying;
             }
 
             continue;
@@ -189,6 +211,21 @@ void AppController::processEvents() {
     }
 }
 
+
+void AppController::startBaking() {
+    if (recorder_.startRecording(engine_, "simulation")) {
+        currentMode_ = AppMode::Recording;
+        isPlaying = true;
+        std::cout << "fas" << std::endl;
+    }
+}
+
+
+void AppController::startPlayback() {
+    if (recorder_.startPlayback(engine_, "simulation")) {
+        currentMode_ = AppMode::Playback;
+    }
+}
 
 void AppController::selectionStart(const sf::Event::MouseButtonPressed* e) {
     isSelecting_ = true;

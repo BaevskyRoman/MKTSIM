@@ -11,6 +11,7 @@ void TopBar::update(sf::RenderWindow& window, sf::Time dt) {
     drawTopBar(window, dt);
     drawSimSettings(window);
     drawFileManager(window);
+    drawRecorder(window);
 }
 
 
@@ -29,6 +30,8 @@ void TopBar::drawTopBar(sf::RenderWindow& window, sf::Time dt) {
     if (ImGui::Button("SimSettings##T", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showSimSettings_ = !showSimSettings_;
     ImGui::SameLine();
     if (ImGui::Button("SimFileManager##T", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showFileManager_ = !showFileManager_;
+    ImGui::SameLine();
+    if (ImGui::Button("Recorder##T", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) showRecorder_ = !showRecorder_;
     ImGui::SameLine();
     ImGui::Text("Molecules: %zu", engineRef_.getMolecules().size());
     ImGui::SameLine();
@@ -89,10 +92,26 @@ void TopBar::drawFileManager(sf::RenderWindow& window) {
         }
         ImGui::SameLine();
         if (ImGui::Button("Load", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
-            fileHandler_.loadScene(engineRef_, "save.json");
+            fileHandler_.loadScene(engineRef_, fileList[selectedItem]);
         }
     }
 
+    ImGui::End();
+}
+
+
+void TopBar::drawRecorder(sf::RenderWindow& window) {
+    if (!showRecorder_) return;
+
+    ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Always);
+    if (ImGui::Begin("Recorder", &showRecorder_)) {
+        if (ImGui::Button("Record", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
+            if (onBakeRequested) onBakeRequested();
+        }
+        if (ImGui::Button("Play", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
+            if (onPlaybackRequested) onPlaybackRequested();
+        }
+    }
     ImGui::End();
 }
 

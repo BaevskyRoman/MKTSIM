@@ -24,6 +24,8 @@ public:
 
     bool bottomBarVisible_ = true, topBarVisible_ = true;
 
+    void setOnBake(std::function<void()> cb) { topBar_.onBakeRequested = cb; }
+    void setOnPlayback(std::function<void()> cb) { topBar_.onPlaybackRequested = cb; }
 private:
     BottomBar bottomBar_;
     TopBar topBar_;
