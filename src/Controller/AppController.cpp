@@ -23,6 +23,13 @@ AppController::AppController()
 }
 
 
+AppController::~AppController() {
+    if (bakeThread_.joinable()) {
+        bakeThread_.join(); 
+    }
+}
+
+
 void AppController::run() {
     sf::Clock clock;
     while (window_.isOpen()) {
@@ -39,19 +46,23 @@ void AppController::update(float deltaTime) {
     manager_.update(window_, sf::seconds(deltaTime));
 
     if (!isPlaying) return;
-    if (currentMode_ == AppMode::Realtime) {
+    if (isBaking_) return;
+
+    if (bakeThread_.joinable()) {
+        bakeThread_.join(); 
+        currentState_ = State::Realtime;
+        isPlaying = false;
+    }
+
+    if (currentState_ == State::Realtime) {
         engine_.update(deltaTime);
     }
-    else if (currentMode_ == AppMode::Playback) {
+    else if (currentState_ == State::Playback) {
         if (!recorder_.playNextFrame(engine_)) {
-            currentMode_ = AppMode::Realtime;
+            currentState_ = State::Realtime;
             isPlaying = false;
             recorder_.stopPlayback();
         }
-    }
-    else if (currentMode_ == AppMode::Recording) {
-        engine_.update(1.f/60);
-        recorder_.recordFrame(engine_);
     }
 }
 
@@ -213,17 +224,42 @@ void AppController::processEvents() {
 
 
 void AppController::startBaking() {
-    if (recorder_.startRecording(engine_, "simulation")) {
-        currentMode_ = AppMode::Recording;
-        isPlaying = true;
-        std::cout << "fas" << std::endl;
+    if (isBaking_) return;
+
+    isBaking_ = true;
+    bakeProgress_ = 0.0f;
+    currentState_ = State::Baking;
+    isPlaying = true;
+
+    bakeThread_ = std::thread(&AppController::bakeTask, this, 60.0f, 1.0f / 60.0f);
+}
+
+
+void AppController::bakeTask(float durationSeconds, float fixedDeltaTime) {
+    if (!recorder_.startRecording(engine_, "simulation")) {
+        isBaking_ = false;
+        return;
     }
+
+    int totalFrames = static_cast<int>(durationSeconds / fixedDeltaTime);
+
+    for (int i = 0; i < totalFrames; ++i) {
+        engine_.update(fixedDeltaTime);
+        recorder_.recordFrame(engine_);
+        
+        // Обновляем прогресс-бар для UI
+        bakeProgress_ = static_cast<float>(i) / static_cast<float>(totalFrames);
+        std::cout << bakeProgress_ << std::endl;
+    }
+
+    recorder_.stopRecording();
+    isBaking_ = false; // Сигнализируем главному потоку, что мы закончили
 }
 
 
 void AppController::startPlayback() {
     if (recorder_.startPlayback(engine_, "simulation")) {
-        currentMode_ = AppMode::Playback;
+        currentState_ = State::Playback;
     }
 }
 

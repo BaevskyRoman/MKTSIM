@@ -6,6 +6,8 @@
 #include "View/Renderer.hpp"
 #include "View/UI/Manager.hpp"
 #include <SFML/Graphics.hpp>
+#include <thread>
+#include <atomic>
 
 
 namespace Controller {
@@ -13,6 +15,7 @@ namespace Controller {
 class AppController {
 public:
     AppController();
+    ~AppController();
     
     void run();
 
@@ -31,16 +34,21 @@ private:
     View::Renderer renderer_;
     View::UI::Manager manager_;
 
-    enum class AppMode {
+    enum class State {
         Realtime,
         Playback,
-        Recording
+        Baking
     };
-    AppMode currentMode_ = AppMode::Realtime;
+    State currentState_ = State::Realtime;
     bool isPlaying = false;
+
+    std::thread bakeThread_;
+    std::atomic<bool> isBaking_{false};
+    std::atomic<float> bakeProgress_{0.0f};
 
     void startBaking();
     void startPlayback();
+    void bakeTask(float durationSeconds, float fixedDeltaTime);
 
     bool isDragging_ = false;
     sf::Vector2i lastMousePos_;
