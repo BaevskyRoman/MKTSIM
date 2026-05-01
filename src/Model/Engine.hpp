@@ -13,7 +13,6 @@ class Engine {
 public:
     void update(float deltaTime);
 
-    const std::vector<Molecule>& getMolecules() const;
     void spawnMoleculesInArea(
         const sf::FloatRect& area, int count, float min_speed, float max_speed, float mass, float radius
     );
@@ -21,28 +20,29 @@ public:
         const sf::FloatRect& area, float concentration, float min_speed, float max_speed, float mass, float radius
     );
 
-    const std::vector<sf::FloatRect>& getStaticBodies() const;
-    void spawnStaticBody(const sf::FloatRect& rect);
-
-    const std::vector<DynamicBody>& getDynamicBodies() const;
-    void spawnDynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m);
+    const std::vector<Molecule>& getMolecules() const { return molecules_; }
+    const std::vector<sf::FloatRect>& getStaticBodies() const { return staticBodies_; }
+    void spawnStaticBody(const sf::FloatRect& rect) { staticBodies_.push_back(rect); }
+    const std::vector<DynamicBody>& getDynamicBodies() const { return dynamicBodies_; }
+    void spawnDynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m) { dynamicBodies_.push_back(DynamicBody(sz, pos, m)); }
     
     bool enableGravity = false;
     float gravityAcceleration = 0;
     
     friend class FileHandler;
     friend class SimulationRecorder;
+
 private:
     std::vector<Molecule> molecules_;
     std::vector<sf::FloatRect> staticBodies_;
     std::vector<DynamicBody> dynamicBodies_;
     
-    void handleCollision(Molecule& mol, const sf::FloatRect& body);
-    void handleCollision(Molecule& mol, DynamicBody& body);
+    void handleCollisions();
     void handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody);
     void handleCollision(DynamicBody& bodyA, DynamicBody& bodyB);
+    void handleCollision(Molecule& mol, const sf::FloatRect& body);
+    void handleCollision(Molecule& mol, DynamicBody& body);
     void handleCollision(Molecule& mol1, Molecule& mol2);
-    void handleCollision();
 };
 
 }

@@ -44,13 +44,28 @@ namespace {
 
 namespace Model {
 
-const std::vector<Molecule>& Engine::getMolecules() const { return molecules_; }
-const std::vector<sf::FloatRect>& Engine::getStaticBodies() const { return staticBodies_; }
-void Engine::spawnStaticBody(const sf::FloatRect& rect) { staticBodies_.push_back(rect); }
+void Engine::spawnMoleculesInArea(const sf::FloatRect& area, int count, 
+                        float min_speed, float max_speed, float mass, float radius) {
+    for (int i = 0; i < count; ++i) {
+        float px = Utils::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
+        float py = Utils::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
+        float angle = Utils::Random::getFloat(0.0f, 2.0f * Utils::PI);
+        float speed = Utils::Random::getFloat(min_speed, max_speed);
+        
+        float vx = std::cos(angle) * speed;
+        float vy = std::sin(angle) * speed;
 
-const std::vector<DynamicBody>& Engine::getDynamicBodies() const { return dynamicBodies_; }
-void Engine::spawnDynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m) { 
-    dynamicBodies_.push_back(DynamicBody(sz, pos, m)); 
+        molecules_.push_back({sf::Vector2f(px, py), sf::Vector2f(vx, vy), mass, radius});
+    }
+}
+
+
+void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float min_speed, float max_speed, 
+                                float mass, float radius) {
+    float areaSize = (area.size.x - 2*radius) * (area.size.y - 2*radius);
+    float maxMolecules = areaSize / (4.0f * radius * radius);
+    int count = static_cast<int>(maxMolecules * concentration);
+    spawnMoleculesInArea(area, count, min_speed, max_speed, mass, radius);
 }
 
 
@@ -73,25 +88,11 @@ void Engine::update(float deltaTime) {
         body.move(deltaTime);
     }
 
-    handleCollision();
+    handleCollisions();
 }
 
 
-void Engine::handleCollision() {
-    // --- MOL TO STATIC BODY ---
-    for (auto& mol : molecules_) {
-        for (const auto& body : staticBodies_) {
-            handleCollision(mol, body);
-        }
-    }
-
-    // --- MOL TO DYNAMIC BODY ---
-    for (auto& mol : molecules_) {
-        for (auto& body : dynamicBodies_) {
-            handleCollision(mol, body);
-        }
-    }
-
+void Engine::handleCollisions() {
     // --- DYNAMIC BODY TO STATIC BODY ---
     for (auto& dBody : dynamicBodies_) {
         for (const auto& sBody : staticBodies_) {
@@ -106,138 +107,24 @@ void Engine::handleCollision() {
         }
     }
 
+    // --- MOL TO STATIC BODY ---
+    for (auto& mol : molecules_) {
+        for (const auto& body : staticBodies_) {
+            handleCollision(mol, body);
+        }
+    }
+
+    // --- MOL TO DYNAMIC BODY ---
+    for (auto& mol : molecules_) {
+        for (auto& body : dynamicBodies_) {
+            handleCollision(mol, body);
+        }
+    }
 
     // --- MOL TO MOL ---
     for (size_t i = 0; i < molecules_.size(); ++i) {
         for (size_t j = i + 1; j < molecules_.size(); ++j) {
             handleCollision(molecules_[i], molecules_[j]);
-        }
-    }
-}
-
-
-void Engine::handleCollision(Molecule& mol, const sf::FloatRect& body) {
-    float closestX = std::clamp(mol.position.x, body.position.x, body.position.x + body.size.x);
-    float closestY = std::clamp(mol.position.y, body.position.y, body.position.y + body.size.y);
-
-    float deltaX = mol.position.x - closestX;
-    float deltaY = mol.position.y - closestY;
-
-    float distancePow2 = deltaX * deltaX + deltaY * deltaY;
-    if (distancePow2 < mol.radius * mol.radius) {
-        float distance = std::sqrt(distancePow2);
-        sf::Vector2f normal;
-        float penetration = 0.0f;
-
-        if (distance > 0.0f) {
-            normal = sf::Vector2f(deltaX / distance, deltaY / distance);
-            penetration = mol.radius - distance;
-        } else {
-            float distToLeft = mol.position.x - body.position.x;
-            float distToRight = (body.position.x + body.size.x) - mol.position.x;
-            float distToTop = mol.position.y - body.position.y;
-            float distToBottom = (body.position.y + body.size.y) - mol.position.y;
-
-            float minDist = std::min({distToLeft, distToRight, distToTop, distToBottom});
-
-            if (minDist == distToLeft) { normal = {-1.0f, 0.0f}; penetration = distToLeft + mol.radius; }
-            else if (minDist == distToRight) { normal = {1.0f, 0.0f}; penetration = distToRight + mol.radius; }
-            else if (minDist == distToTop) { normal = {0.0f, -1.0f}; penetration = distToTop + mol.radius; }
-            else { normal = {0.0f, 1.0f}; penetration = distToBottom + mol.radius; }
-        }
-
-        float velocityAlongNormal = mol.velocity.x * normal.x + mol.velocity.y * normal.y;
-        
-        if (velocityAlongNormal < 0) {
-            mol.velocity -= normal * (2.0f * velocityAlongNormal);
-        }
-    }
-}
-
-
-void Engine::handleCollision(Molecule& mol, DynamicBody& body) {
-    float dx = mol.position.x - body.position.x;
-    float dy = mol.position.y - body.position.y;
-
-    float cosA = std::cos(body.angle);
-    float sinA = std::sin(body.angle);
-
-    float localX = dx * cosA + dy * sinA;
-    float localY = -dx * sinA + dy * cosA;
-
-    float halfW = body.size.x / 2.0f;
-    float halfH = body.size.y / 2.0f;
-
-    float closestLocalX = std::clamp(localX, -halfW, halfW);
-    float closestLocalY = std::clamp(localY, -halfH, halfH);
-
-    float distX = localX - closestLocalX;
-    float distY = localY - closestLocalY;
-    float distancePow2 = distX * distX + distY * distY;
-
-    if (distancePow2 < mol.radius * mol.radius) {
-        float distance = std::sqrt(distancePow2);
-        
-        sf::Vector2f localNormal;
-        float penetration = 0.0f;
-
-        if (distance > 0.0f) {
-            localNormal = sf::Vector2f(distX / distance, distY / distance);
-            penetration = mol.radius - distance;
-        } else {
-            float distToLeft = localX - (-halfW);
-            float distToRight = halfW - localX;
-            float distToBottom = localY - (-halfH);
-            float distToTop = halfH - localY;
-
-            float minDist = std::min({distToLeft, distToRight, distToBottom, distToTop});
-
-            if (minDist == distToLeft) { 
-                localNormal = {-1.0f, 0.0f}; penetration = distToLeft + mol.radius; closestLocalX = -halfW; 
-            } else if (minDist == distToRight) { 
-                localNormal = {1.0f, 0.0f}; penetration = distToRight + mol.radius; closestLocalX = halfW; 
-            } else if (minDist == distToBottom) { 
-                localNormal = {0.0f, -1.0f}; penetration = distToBottom + mol.radius; closestLocalY = -halfH; 
-            } else { 
-                localNormal = {0.0f, 1.0f}; penetration = distToTop + mol.radius; closestLocalY = halfH; 
-            }
-        }
-
-        sf::Vector2f worldNormal(
-            localNormal.x * cosA - localNormal.y * sinA,
-            localNormal.x * sinA + localNormal.y * cosA
-        );
-
-        sf::Vector2f worldContactPoint(
-            closestLocalX * cosA - closestLocalY * sinA + body.position.x,
-            closestLocalX * sinA + closestLocalY * cosA + body.position.y
-        );
-
-        float invMassMol = 1.0f / mol.mass;
-        float invMassBody = 1.0f / body.mass;
-        float invMassTotal = invMassMol + invMassBody;
-
-        sf::Vector2f rBody = worldContactPoint - body.position;
-        
-        sf::Vector2f vBodyPoint = body.velocity + Utils::cross(body.angularVelocity, rBody);
-        sf::Vector2f vMolPoint = mol.velocity;
-
-        sf::Vector2f relativeVelocity = vMolPoint - vBodyPoint;
-        float velAlongNormal = Utils::dot(relativeVelocity, worldNormal);
-
-        if (velAlongNormal < 0) {
-            float e = 1.0f;
-            float rBodyCrossN = Utils::cross(rBody, worldNormal);
-            float invInertiaBody = 1.0f / body.inertia;
-
-            float j = -(1.0f + e) * velAlongNormal;
-            j /= (invMassMol + invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
-
-            sf::Vector2f impulse = worldNormal * j;
-
-            mol.velocity += impulse * invMassMol;
-            body.velocity -= impulse * invMassBody;
-            body.angularVelocity -= rBodyCrossN * j * invInertiaBody;
         }
     }
 }
@@ -454,6 +341,133 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
 }
 
 
+void Engine::handleCollision(Molecule& mol, const sf::FloatRect& body) {
+    float closestX = std::clamp(mol.position.x, body.position.x, body.position.x + body.size.x);
+    float closestY = std::clamp(mol.position.y, body.position.y, body.position.y + body.size.y);
+
+    float deltaX = mol.position.x - closestX;
+    float deltaY = mol.position.y - closestY;
+
+    float distancePow2 = deltaX * deltaX + deltaY * deltaY;
+    if (distancePow2 < mol.radius * mol.radius) {
+        float distance = std::sqrt(distancePow2);
+        sf::Vector2f normal;
+        float penetration = 0.0f;
+
+        if (distance > 0.0f) {
+            normal = sf::Vector2f(deltaX / distance, deltaY / distance);
+            penetration = mol.radius - distance;
+        } else {
+            float distToLeft = mol.position.x - body.position.x;
+            float distToRight = (body.position.x + body.size.x) - mol.position.x;
+            float distToTop = mol.position.y - body.position.y;
+            float distToBottom = (body.position.y + body.size.y) - mol.position.y;
+
+            float minDist = std::min({distToLeft, distToRight, distToTop, distToBottom});
+
+            if (minDist == distToLeft) { normal = {-1.0f, 0.0f}; penetration = distToLeft + mol.radius; }
+            else if (minDist == distToRight) { normal = {1.0f, 0.0f}; penetration = distToRight + mol.radius; }
+            else if (minDist == distToTop) { normal = {0.0f, -1.0f}; penetration = distToTop + mol.radius; }
+            else { normal = {0.0f, 1.0f}; penetration = distToBottom + mol.radius; }
+        }
+
+        float velocityAlongNormal = mol.velocity.x * normal.x + mol.velocity.y * normal.y;
+        
+        if (velocityAlongNormal < 0) {
+            mol.velocity -= normal * (2.0f * velocityAlongNormal);
+        }
+    }
+}
+
+
+void Engine::handleCollision(Molecule& mol, DynamicBody& body) {
+    float dx = mol.position.x - body.position.x;
+    float dy = mol.position.y - body.position.y;
+
+    float cosA = std::cos(body.angle);
+    float sinA = std::sin(body.angle);
+
+    float localX = dx * cosA + dy * sinA;
+    float localY = -dx * sinA + dy * cosA;
+
+    float halfW = body.size.x / 2.0f;
+    float halfH = body.size.y / 2.0f;
+
+    float closestLocalX = std::clamp(localX, -halfW, halfW);
+    float closestLocalY = std::clamp(localY, -halfH, halfH);
+
+    float distX = localX - closestLocalX;
+    float distY = localY - closestLocalY;
+    float distancePow2 = distX * distX + distY * distY;
+
+    if (distancePow2 < mol.radius * mol.radius) {
+        float distance = std::sqrt(distancePow2);
+        
+        sf::Vector2f localNormal;
+        float penetration = 0.0f;
+
+        if (distance > 0.0f) {
+            localNormal = sf::Vector2f(distX / distance, distY / distance);
+            penetration = mol.radius - distance;
+        } else {
+            float distToLeft = localX - (-halfW);
+            float distToRight = halfW - localX;
+            float distToBottom = localY - (-halfH);
+            float distToTop = halfH - localY;
+
+            float minDist = std::min({distToLeft, distToRight, distToBottom, distToTop});
+
+            if (minDist == distToLeft) { 
+                localNormal = {-1.0f, 0.0f}; penetration = distToLeft + mol.radius; closestLocalX = -halfW; 
+            } else if (minDist == distToRight) { 
+                localNormal = {1.0f, 0.0f}; penetration = distToRight + mol.radius; closestLocalX = halfW; 
+            } else if (minDist == distToBottom) { 
+                localNormal = {0.0f, -1.0f}; penetration = distToBottom + mol.radius; closestLocalY = -halfH; 
+            } else { 
+                localNormal = {0.0f, 1.0f}; penetration = distToTop + mol.radius; closestLocalY = halfH; 
+            }
+        }
+
+        sf::Vector2f worldNormal(
+            localNormal.x * cosA - localNormal.y * sinA,
+            localNormal.x * sinA + localNormal.y * cosA
+        );
+
+        sf::Vector2f worldContactPoint(
+            closestLocalX * cosA - closestLocalY * sinA + body.position.x,
+            closestLocalX * sinA + closestLocalY * cosA + body.position.y
+        );
+
+        float invMassMol = 1.0f / mol.mass;
+        float invMassBody = 1.0f / body.mass;
+        float invMassTotal = invMassMol + invMassBody;
+
+        sf::Vector2f rBody = worldContactPoint - body.position;
+        
+        sf::Vector2f vBodyPoint = body.velocity + Utils::cross(body.angularVelocity, rBody);
+        sf::Vector2f vMolPoint = mol.velocity;
+
+        sf::Vector2f relativeVelocity = vMolPoint - vBodyPoint;
+        float velAlongNormal = Utils::dot(relativeVelocity, worldNormal);
+
+        if (velAlongNormal < 0) {
+            float e = 1.0f;
+            float rBodyCrossN = Utils::cross(rBody, worldNormal);
+            float invInertiaBody = 1.0f / body.inertia;
+
+            float j = -(1.0f + e) * velAlongNormal;
+            j /= (invMassMol + invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
+
+            sf::Vector2f impulse = worldNormal * j;
+
+            mol.velocity += impulse * invMassMol;
+            body.velocity -= impulse * invMassBody;
+            body.angularVelocity -= rBodyCrossN * j * invInertiaBody;
+        }
+    }
+}
+
+
 void Engine::handleCollision(Molecule& m1, Molecule& m2) {
     sf::Vector2f delta = m2.position - m1.position;
 
@@ -486,31 +500,6 @@ void Engine::handleCollision(Molecule& m1, Molecule& m2) {
         m1.velocity -= normal * (impulseScalar * m2.mass);
         m2.velocity += normal * (impulseScalar * m1.mass);
     }
-}
-
-
-void Engine::spawnMoleculesInArea(const sf::FloatRect& area, int count, 
-                        float min_speed, float max_speed, float mass, float radius) {
-    for (int i = 0; i < count; ++i) {
-        float px = Utils::Random::getFloat(area.position.x + radius, area.position.x + area.size.x - radius);
-        float py = Utils::Random::getFloat(area.position.y + radius, area.position.y + area.size.y - radius);
-        float angle = Utils::Random::getFloat(0.0f, 2.0f * Utils::PI);
-        float speed = Utils::Random::getFloat(min_speed, max_speed);
-        
-        float vx = std::cos(angle) * speed;
-        float vy = std::sin(angle) * speed;
-
-        molecules_.push_back({sf::Vector2f(px, py), sf::Vector2f(vx, vy), mass, radius});
-    }
-}
-
-
-void Engine::spawnMoleculesInArea(const sf::FloatRect& area, float concentration, float min_speed, float max_speed, 
-                                float mass, float radius) {
-    float areaSize = (area.size.x - 2*radius) * (area.size.y - 2*radius);
-    float maxMolecules = areaSize / (4.0f * radius * radius);
-    int count = static_cast<int>(maxMolecules * concentration);
-    spawnMoleculesInArea(area, count, min_speed, max_speed, mass, radius);
 }
 
 }
