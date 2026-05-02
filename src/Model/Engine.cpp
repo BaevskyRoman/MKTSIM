@@ -122,10 +122,18 @@ void Engine::handleCollisions() {
     }
 
     // --- MOL TO MOL ---
-    for (size_t i = 0; i < molecules_.size(); ++i) {
-        for (size_t j = i + 1; j < molecules_.size(); ++j) {
-            handleCollision(molecules_[i], molecules_[j]);
-        }
+    // for (size_t i = 0; i < molecules_.size(); ++i) {
+    //     for (size_t j = i + 1; j < molecules_.size(); ++j) {
+    //         handleCollision(molecules_[i], molecules_[j]);
+    //     }
+    // }
+    events.clear();
+    grid.update(molecules_);
+    grid.checkGrid(molecules_, events);
+    Utils::Random::shuffle(events);
+
+    for (auto& event : events) {
+        handleCollision(event);
     }
 }
 
@@ -501,5 +509,11 @@ void Engine::handleCollision(Molecule& m1, Molecule& m2) {
         m2.velocity += normal * (impulseScalar * m1.mass);
     }
 }
+
+
+void Engine::handleCollision(Event& event) {
+    handleCollision(molecules_[event.indexA], molecules_[event.indexB]);
+}
+
 
 }

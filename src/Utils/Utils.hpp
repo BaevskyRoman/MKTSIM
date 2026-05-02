@@ -50,6 +50,11 @@ public:
         return dist(generator_);
     }
 
+    template <typename T>
+        static void shuffle(std::vector<T>& vec) {
+            std::shuffle(vec.begin(), vec.end(), generator_);
+        }
+        
 private:
     inline static std::mt19937 generator_{std::random_device{}()};
 };

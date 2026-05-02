@@ -2,6 +2,8 @@
 
 #include "Model/Molecule.hpp"
 #include "Model/DynamicBody.hpp"
+#include "Model/CollisionGrid.hpp"
+#include "Model/Event.hpp"
 #include <SFML/Graphics/Rect.hpp>
 #include <vector>
 #include <SFML/System/Vector2.hpp>
@@ -11,6 +13,8 @@ namespace Model {
 
 class Engine {
 public:
+    Engine() { grid.setGrid(sf::Vector2f(0.f, 0.f), sf::Vector2f(1000.f, 1000.f), 12.f, 100000); }
+
     void update(float deltaTime);
 
     void spawnMoleculesInArea(
@@ -36,6 +40,9 @@ private:
     std::vector<Molecule> molecules_;
     std::vector<sf::FloatRect> staticBodies_;
     std::vector<DynamicBody> dynamicBodies_;
+
+    std::vector<Event> events;
+    CollisionGrid grid;
     
     void handleCollisions();
     void handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody);
@@ -43,6 +50,7 @@ private:
     void handleCollision(Molecule& mol, const sf::FloatRect& body);
     void handleCollision(Molecule& mol, DynamicBody& body);
     void handleCollision(Molecule& mol1, Molecule& mol2);
+    void handleCollision(Event& event);
 };
 
 }
