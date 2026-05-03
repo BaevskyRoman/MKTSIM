@@ -23,7 +23,7 @@ public:
 
 private:
     std::fstream file_;
-    FileHandler fileHandler;
+    // FileHandler fileHandler;
     
     struct BodyDState {
         sf::Vector2f position;

@@ -29,7 +29,7 @@ private:
     bool showFileManager_ = false;
     bool showRecorder_ = false;
     Model::Engine& engineRef_;
-    Model::FileHandler fileHandler_;
+    // Model::FileHandler fileHandler_;
 };
 
 }

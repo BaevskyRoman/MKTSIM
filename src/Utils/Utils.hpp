@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Model/DynamicBody.hpp>
+
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <random>
@@ -39,29 +39,6 @@ namespace Utils {
             static_cast<float>(color.b) / 255.0f,
             static_cast<float>(color.a) / 255.0f
         );
-    }
-    
-    inline void getVertices(const Model::DynamicBody& body, sf::Vector2f out[4]) {
-        float hw = body.size.x / 2.0f;
-        float hh = body.size.y / 2.0f;
-        float cosA = std::cos(body.angle);
-        float sinA = std::sin(body.angle);
-        
-        sf::Vector2f corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
-        for (int i = 0; i < 4; ++i) {
-            out[i] = sf::Vector2f(
-                corners[i].x * cosA - corners[i].y * sinA + body.position.x,
-                corners[i].x * sinA + corners[i].y * cosA + body.position.y
-            );
-        }
-    }
-
-
-    inline void getVertices(const sf::FloatRect& rect, sf::Vector2f out[4]) {
-        out[0] = sf::Vector2f(rect.position.x, rect.position.y);
-        out[1] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
-        out[2] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + rect.size.y);
-        out[3] = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y);
     }
 
 

@@ -58,45 +58,45 @@ void TopBar::drawSimSettings(sf::RenderWindow& window) {
 
 
 void TopBar::drawFileManager(sf::RenderWindow& window) {
-    if (!showFileManager_) return;
-    ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Always);
-    if (ImGui::Begin("File Manager", &showFileManager_)) {
-        // --- SAVE ---
-        static char saveFileName[32] = "";
+    // if (!showFileManager_) return;
+    // ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_Always);
+    // if (ImGui::Begin("File Manager", &showFileManager_)) {
+    //     // --- SAVE ---
+    //     static char saveFileName[32] = "";
 
-        ImGui::InputText("##SaveFile", saveFileName, sizeof(saveFileName));
-        ImGui::SameLine();
-        if (ImGui::Button("Save", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
-            fileHandler_.saveScene(engineRef_, saveFileName);
-        }
+    //     ImGui::InputText("##SaveFile", saveFileName, sizeof(saveFileName));
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Save", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
+    //         fileHandler_.saveScene(engineRef_, saveFileName);
+    //     }
 
-        // -- LOAD ---
-        static std::vector<std::string> fileList;
-        static int selectedItem = -1;
-        std::string preview = (selectedItem >= 0 && selectedItem < fileList.size()) 
-                    ? fileList[selectedItem] 
-                    : "Select a file";
+    //     // -- LOAD ---
+    //     static std::vector<std::string> fileList;
+    //     static int selectedItem = -1;
+    //     std::string preview = (selectedItem >= 0 && selectedItem < fileList.size()) 
+    //                 ? fileList[selectedItem] 
+    //                 : "Select a file";
 
-        if (ImGui::BeginCombo("##load", preview.c_str())) {
-            if (ImGui::IsWindowAppearing()) { 
-                fileList = fileHandler_.getFilesInFolder("saves");
-            }
+    //     if (ImGui::BeginCombo("##load", preview.c_str())) {
+    //         if (ImGui::IsWindowAppearing()) { 
+    //             fileList = fileHandler_.getFilesInFolder("saves");
+    //         }
 
-            for (int i = 0; i < fileList.size(); i++) {
-                const bool isSelected = (selectedItem == i);
-                if (ImGui::Selectable(fileList[i].c_str(), isSelected)) {
-                    selectedItem = i;
-                }
-            }
-            ImGui::EndCombo();
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Load", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
-            fileHandler_.loadScene(engineRef_, fileList[selectedItem]);
-        }
-    }
+    //         for (int i = 0; i < fileList.size(); i++) {
+    //             const bool isSelected = (selectedItem == i);
+    //             if (ImGui::Selectable(fileList[i].c_str(), isSelected)) {
+    //                 selectedItem = i;
+    //             }
+    //         }
+    //         ImGui::EndCombo();
+    //     }
+    //     ImGui::SameLine();
+    //     if (ImGui::Button("Load", ImVec2(Config::Visual::BUTTON_WIDTH, 20))) {
+    //         fileHandler_.loadScene(engineRef_, fileList[selectedItem]);
+    //     }
+    // }
 
-    ImGui::End();
+    // ImGui::End();
 }
 
 

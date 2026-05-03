@@ -1,85 +1,39 @@
 #pragma once
 
 #include "Model/Molecule.hpp"
-#include "Model/DynamicBody.hpp"
+#include "Model/Body.hpp"
 #include "Utils/Utils.hpp"
 #include <SFML/Graphics/Rect.hpp>
 
 
 namespace Model::Geo {
 
-inline bool isColliding(const sf::FloatRect& sBody, const DynamicBody& dBody) {
-    sf::Vector2f dynVerts[4];
-    Utils::getVertices(dBody, dynVerts);
-    
-    sf::Vector2f statVerts[4];
-    Utils::getVertices(sBody, statVerts);
-    
-    float cosA = std::cos(dBody.angle);
-    float sinA = std::sin(dBody.angle);
+inline bool isColliding(const Body& bodyA, const Body& bodyB) {
     sf::Vector2f axes[4] = {
-        {1.0f, 0.0f}, {0.0f, 1.0f},
-        {cosA, sinA}, {-sinA, cosA}
+        bodyA.vertices[1] - bodyA.vertices[0],
+        bodyA.vertices[3] - bodyA.vertices[0],
+        bodyB.vertices[1] - bodyB.vertices[0],
+        bodyB.vertices[3] - bodyB.vertices[0]
     };
-    
+
     for (int i = 0; i < 4; ++i) {
-        float min1, max1, min2, max2;
-        Utils::project(dynVerts, axes[i], min1, max1);
-        Utils::project(statVerts, axes[i], min2, max2);
-        
-        if (max1 < min2 || max2 < min1) {
+        const sf::Vector2f& axis = axes[i];
+
+        if (axis.x == 0 && axis.y == 0) continue;
+
+        float minA, maxA, minB, maxB;
+        Utils::project(bodyA.vertices.data(), axis, minA, maxA);
+        Utils::project(bodyB.vertices.data(), axis, minB, maxB);
+
+        if (maxA < minB || maxB < minA) {
             return false; 
         }
     }
-    
     return true;
 }
 
 
-inline bool isColliding(const DynamicBody& bodyA, const DynamicBody& bodyB) {
-    sf::Vector2f vertsA[4];
-    Utils::getVertices(bodyA, vertsA);
-    
-    sf::Vector2f vertsB[4];
-    Utils::getVertices(bodyB, vertsB);
-
-    float cosA = std::cos(bodyA.angle);
-    float sinA = std::sin(bodyA.angle);
-    float cosB = std::cos(bodyB.angle);
-    float sinB = std::sin(bodyB.angle);
-    
-    sf::Vector2f axes[4] = {
-        {cosA, sinA}, {-sinA, cosA},
-        {cosB, sinB}, {-sinB, cosB} 
-    };
-
-    for (int k = 0; k < 4; ++k) {
-        float min1, max1, min2, max2;
-        Utils::project(vertsA, axes[k], min1, max1);
-        Utils::project(vertsB, axes[k], min2, max2);
-
-        if (max1 < min2 || max2 < min1) {
-            return false; 
-        }
-    }
-    
-    return true;
-}
-
-
-inline bool isColliding(const sf::FloatRect& body, const Molecule& mol) {
-    float closestX = std::clamp(mol.position.x, body.position.x, body.position.x + body.size.x);
-    float closestY = std::clamp(mol.position.y, body.position.y, body.position.y + body.size.y);
-
-    float deltaX = mol.position.x - closestX;
-    float deltaY = mol.position.y - closestY;
-
-    float distancePow2 = deltaX * deltaX + deltaY * deltaY;
-    return distancePow2 < (mol.radius * mol.radius);
-}
-
-
-inline bool isColliding(const DynamicBody& body, const Molecule& mol) {
+inline bool isColliding(const Body& body, const Molecule& mol) {
     // 1. Вектор от центра тела к центру молекулы
     float dx = mol.position.x - body.position.x;
     float dy = mol.position.y - body.position.y;

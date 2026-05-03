@@ -24,8 +24,11 @@ void Renderer::draw(sf::RenderWindow& window, const Model::Engine& engine) {
     sf::RectangleShape rectShape;
     rectShape.setFillColor(Config::Visual::STATIC_BODY_COLOR);
     for (const auto& body : engine.getStaticBodies()) {
-        rectShape.setPosition(body.position);
         rectShape.setSize(body.size);
+        rectShape.setOrigin({body.size.x / 2.0f, body.size.y / 2.0f});
+        rectShape.setPosition(body.position);
+        rectShape.setRotation(sf::radians(body.angle));
+
         window.draw(rectShape);
     }
 

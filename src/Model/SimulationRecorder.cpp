@@ -5,7 +5,7 @@
 namespace Model {
 
 bool SimulationRecorder::startRecording(const Engine& engine, const std::string& filename) {
-    fileHandler.saveScene(engine, "_" + filename);
+    // fileHandler.saveScene(engine, "_" + filename);
     file_.open("bake/" + filename + ".bin", std::ios::out | std::ios::binary);
     return file_.is_open();
 }
@@ -37,7 +37,7 @@ void SimulationRecorder::stopRecording() {
 
 
 bool SimulationRecorder::startPlayback(Engine& engine, const std::string& filename) {
-    fileHandler.loadScene(engine, "_" + filename);
+    // fileHandler.loadScene(engine, "_" + filename);
     file_.open("bake/" + filename + ".bin", std::ios::in | std::ios::binary);
     return file_.is_open();
 }

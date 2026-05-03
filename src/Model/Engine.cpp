@@ -137,20 +137,17 @@ void Engine::resolveCollisions() {
 
 
 void Engine::resolveCollision(EventSD& event) {
-    const sf::FloatRect& sBody = staticBodies_[event.indexA];
+    const StaticBody& sBody = staticBodies_[event.indexA];
     DynamicBody& dBody = dynamicBodies_[event.indexB];
-
-    sf::Vector2f dynVerts[4];
-    Utils::getVertices(dBody, dynVerts);
     
-    sf::Vector2f statVerts[4];
-    Utils::getVertices(sBody, statVerts);
+    float cosD = std::cos(dBody.angle), sinD = std::sin(dBody.angle);
+    float cosS = std::cos(sBody.angle), sinS = std::sin(sBody.angle);
     
-    float cosA = std::cos(dBody.angle);
-    float sinA = std::sin(dBody.angle);
     sf::Vector2f axes[4] = {
-        {1.0f, 0.0f}, {0.0f, 1.0f},
-        {cosA, sinA}, {-sinA, cosA}
+        {cosD, sinD},   // Локальная ось X динамического тела
+        {-sinD, cosD},  // Локальная ось Y динамического тела
+        {cosS, sinS},   // Локальная ось X статического тела
+        {-sinS, cosS}   // Локальная ось Y статического тела
     };
     
     float minOverlap = std::numeric_limits<float>::max();
@@ -158,8 +155,8 @@ void Engine::resolveCollision(EventSD& event) {
     
     for (int i = 0; i < 4; ++i) {
         float min1, max1, min2, max2;
-        Utils::project(dynVerts, axes[i], min1, max1);
-        Utils::project(statVerts, axes[i], min2, max2);
+        Utils::project(dBody.vertices.data(), axes[i], min1, max1);
+        Utils::project(sBody.vertices.data(), axes[i], min2, max2);
         
         float overlap = std::min(max1, max2) - std::max(min1, min2);
         if (overlap < minOverlap) {
@@ -168,22 +165,18 @@ void Engine::resolveCollision(EventSD& event) {
         }
     }
     
-    sf::Vector2f staticCenter(
-        sBody.position.x + sBody.size.x / 2.0f, 
-        sBody.position.y + sBody.size.y / 2.0f
-    );
-    sf::Vector2f direction = dBody.position - staticCenter;
+    sf::Vector2f direction = dBody.position - sBody.position;
     if (Utils::dot(direction, collisionNormal) < 0) {
         collisionNormal = -collisionNormal;
     }
 
-    sf::Vector2f contactPoint = dynVerts[0];
-    float minProj = Utils::dot(dynVerts[0], collisionNormal);
+    sf::Vector2f contactPoint = dBody.vertices[0];
+    float minProj = Utils::dot(dBody.vertices[0], collisionNormal);
     for (int i = 1; i < 4; ++i) {
-        float proj = Utils::dot(dynVerts[i], collisionNormal);
+        float proj = Utils::dot(dBody.vertices[i], collisionNormal);
         if (proj < minProj) {
             minProj = proj;
-            contactPoint = dynVerts[i];
+            contactPoint = dBody.vertices[i];
         }
     }
 
@@ -213,13 +206,6 @@ void Engine::resolveCollision(EventDD& event) {
     DynamicBody& bodyA = dynamicBodies_[event.indexA];
     DynamicBody& bodyB = dynamicBodies_[event.indexB];
 
-    // Вычисляем вершины ОДИН раз
-    sf::Vector2f vertsA[4];
-    Utils::getVertices(bodyA, vertsA);
-    
-    sf::Vector2f vertsB[4];
-    Utils::getVertices(bodyB, vertsB);
-
     float cosA = std::cos(bodyA.angle);
     float sinA = std::sin(bodyA.angle);
     float cosB = std::cos(bodyB.angle);
@@ -236,8 +222,8 @@ void Engine::resolveCollision(EventDD& event) {
     // 1. Поиск нормали коллизии (ось с наименьшим перекрытием)
     for (int k = 0; k < 4; ++k) {
         float min1, max1, min2, max2;
-        Utils::project(vertsA, axes[k], min1, max1);
-        Utils::project(vertsB, axes[k], min2, max2);
+        Utils::project(bodyA.vertices.data(), axes[k], min1, max1);
+        Utils::project(bodyB.vertices.data(), axes[k], min2, max2);
 
         float overlap = std::min(max1, max2) - std::max(min1, min2);
         if (overlap < minOverlap) {
@@ -255,23 +241,23 @@ void Engine::resolveCollision(EventDD& event) {
     // (Позиционная коррекция и повторный getVertices удалены)
 
     // 3. Поиск Точки Контакта (используем УЖЕ рассчитанные vertsA и vertsB)
-    sf::Vector2f contactA = vertsA[0];
-    float maxProjA = Utils::dot(vertsA[0], collisionNormal);
+    sf::Vector2f contactA = bodyA.vertices[0];
+    float maxProjA = Utils::dot(bodyA.vertices[0], collisionNormal);
     for (int k = 1; k < 4; ++k) {
-        float proj = Utils::dot(vertsA[k], collisionNormal);
+        float proj = Utils::dot(bodyA.vertices[k], collisionNormal);
         if (proj > maxProjA) {
             maxProjA = proj;
-            contactA = vertsA[k];
+            contactA = bodyA.vertices[k];
         }
     }
 
-    sf::Vector2f contactB = vertsB[0];
-    float maxProjB = Utils::dot(vertsB[0], -collisionNormal);
+    sf::Vector2f contactB = bodyB.vertices[0];
+    float maxProjB = Utils::dot(bodyB.vertices[0], -collisionNormal);
     for (int k = 1; k < 4; ++k) {
-        float proj = Utils::dot(vertsB[k], -collisionNormal);
+        float proj = Utils::dot(bodyB.vertices[k], -collisionNormal);
         if (proj > maxProjB) {
             maxProjB = proj;
-            contactB = vertsB[k];
+            contactB = bodyB.vertices[k];
         }
     }
 
@@ -316,44 +302,56 @@ void Engine::resolveCollision(EventDD& event) {
 
 
 void Engine::resolveCollision(EventSM& event) {
-    const sf::FloatRect& body = staticBodies_[event.indexA];
+    const StaticBody& body = staticBodies_[event.indexA];
     Molecule& mol = molecules_[event.indexB];
 
-    // Заново находим дельту для вектора нормали
-    float closestX = std::clamp(mol.position.x, body.position.x, body.position.x + body.size.x);
-    float closestY = std::clamp(mol.position.y, body.position.y, body.position.y + body.size.y);
-
-    float deltaX = mol.position.x - closestX;
-    float deltaY = mol.position.y - closestY;
+    float dx = mol.position.x - body.position.x;
+    float dy = mol.position.y - body.position.y;
     
-    float distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
-    sf::Vector2f normal;
+    float cosA = std::cos(body.angle);
+    float sinA = std::sin(body.angle);
+    
+    float localX = dx * cosA + dy * sinA;
+    float localY = -dx * sinA + dy * cosA;
 
-    // Определение нормали
+    float halfW = body.size.x / 2.0f;
+    float halfH = body.size.y / 2.0f;
+
+    float closestLocalX = std::clamp(localX, -halfW, halfW);
+    float closestLocalY = std::clamp(localY, -halfH, halfH);
+
+    float distX = localX - closestLocalX;
+    float distY = localY - closestLocalY;
+    
+    float distance = std::sqrt(distX * distX + distY * distY);
+    
+    sf::Vector2f localNormal;
+
     if (distance > 0.0f) {
-        normal = sf::Vector2f(deltaX / distance, deltaY / distance);
+        localNormal = sf::Vector2f(distX / distance, distY / distance);
     } else {
-        // Редкий случай: центр молекулы оказался ровно внутри или на грани тела
-        float distToLeft = mol.position.x - body.position.x;
-        float distToRight = (body.position.x + body.size.x) - mol.position.x;
-        float distToTop = mol.position.y - body.position.y;
-        float distToBottom = (body.position.y + body.size.y) - mol.position.y;
+        float distToLeft = localX - (-halfW);
+        float distToRight = halfW - localX;
+        float distToBottom = localY - (-halfH);
+        float distToTop = halfH - localY;
 
-        float minDist = std::min({distToLeft, distToRight, distToTop, distToBottom});
+        float minDist = std::min({distToLeft, distToRight, distToBottom, distToTop});
 
-        if (minDist == distToLeft) { normal = {-1.0f, 0.0f}; }
-        else if (minDist == distToRight) { normal = {1.0f, 0.0f}; }
-        else if (minDist == distToTop) { normal = {0.0f, -1.0f}; }
-        else { normal = {0.0f, 1.0f}; }
+        if (minDist == distToLeft) localNormal = {-1.0f, 0.0f};
+        else if (minDist == distToRight) localNormal = {1.0f, 0.0f};
+        else if (minDist == distToBottom) localNormal = {0.0f, -1.0f};
+        else localNormal = {0.0f, 1.0f};
     }
 
-    // Проекция скорости на нормаль
-    float velocityAlongNormal = mol.velocity.x * normal.x + mol.velocity.y * normal.y;
+    sf::Vector2f worldNormal(
+        localNormal.x * cosA - localNormal.y * sinA,
+        localNormal.x * sinA + localNormal.y * cosA
+    );
+
+    float velocityAlongNormal = Utils::dot(mol.velocity, worldNormal);
     
-    // Если молекула движется НАВСТРЕЧУ прямоугольнику
     if (velocityAlongNormal < 0) {
-        // Формула упругого отражения от неподвижного объекта (стенки): v' = v - 2(v·n)n
-        mol.velocity -= normal * (2.0f * velocityAlongNormal);
+        mol.velocity -= worldNormal * (2.0f * velocityAlongNormal);
     }
 }
 

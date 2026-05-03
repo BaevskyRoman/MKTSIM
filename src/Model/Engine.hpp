@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Model/Molecule.hpp"
-#include "Model/DynamicBody.hpp"
+#include "Model/Body.hpp"
 #include "Model/CollisionGrid.hpp"
 #include "Model/Event.hpp"
 #include <SFML/Graphics/Rect.hpp>
@@ -18,17 +18,32 @@ public:
     void update(float deltaTime);
 
     void spawnMoleculesInArea(
-        const sf::FloatRect& area, int count, float min_speed, float max_speed, float mass, float radius
+        const sf::FloatRect& area, int count, 
+        float min_speed, float max_speed, 
+        float mass, float radius
     );
     void spawnMoleculesInArea(
-        const sf::FloatRect& area, float concentration, float min_speed, float max_speed, float mass, float radius
+        const sf::FloatRect& area, float concentration, 
+        float min_speed, float max_speed, 
+        float mass, float radius
     );
 
-    const std::vector<Molecule>& getMolecules() const { return molecules_; }
-    const std::vector<sf::FloatRect>& getStaticBodies() const { return staticBodies_; }
-    void spawnStaticBody(const sf::FloatRect& rect) { staticBodies_.push_back(rect); }
+    const std::vector<StaticBody>& getStaticBodies() const { return staticBodies_; }
     const std::vector<DynamicBody>& getDynamicBodies() const { return dynamicBodies_; }
-    void spawnDynamicBody(sf::Vector2f sz, sf::Vector2f pos, float m) { dynamicBodies_.push_back(DynamicBody(sz, pos, m)); }
+    const std::vector<Molecule>& getMolecules() const { return molecules_; }
+
+    void spawnStaticBody(sf::Vector2f size, sf::Vector2f position) { 
+        staticBodies_.push_back(StaticBody(size, position)); 
+    }
+    void spawnStaticBody(const sf::FloatRect rect) {
+        spawnStaticBody(rect.size, rect.position + rect.size / 2.f);
+    }
+    void spawnDynamicBody(sf::Vector2f size, sf::Vector2f position, float m) { 
+        dynamicBodies_.push_back(DynamicBody(size, m, position)); 
+    }
+    void spawnDynamicBody(const sf::FloatRect rect, float m) {
+        spawnDynamicBody(rect.size, rect.position + rect.size/2.0f, m);
+    }
     
     bool enableGravity = false;
     float gravityAcceleration = 0;
@@ -38,9 +53,9 @@ public:
     friend class SimulationRecorder;
 
 private:
-    std::vector<Molecule> molecules_;
-    std::vector<sf::FloatRect> staticBodies_;
+    std::vector<StaticBody> staticBodies_;
     std::vector<DynamicBody> dynamicBodies_;
+    std::vector<Molecule> molecules_;
 
     std::vector<EventSD> eventsSD;
     std::vector<EventDD> eventsDD;
@@ -57,11 +72,6 @@ private:
     void resolveCollision(EventSM& event);
     void resolveCollision(EventDM& event);
     void resolveCollision(EventMM& event);
-
-    void handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody);
-    void handleCollision(DynamicBody& bodyA, DynamicBody& bodyB);
-    void handleCollision(Molecule& mol, const sf::FloatRect& body);
-    void handleCollision(Molecule& mol, DynamicBody& body);
 };
 
 }

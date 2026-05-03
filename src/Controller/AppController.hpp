@@ -29,7 +29,7 @@ private:
 
     sf::RenderWindow window_;
     Model::Engine engine_;
-    Model::FileHandler fileHandler_;
+    // Model::FileHandler fileHandler_;
     Model::SimulationRecorder recorder_;
     View::Renderer renderer_;
     View::UI::Manager manager_;

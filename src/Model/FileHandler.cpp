@@ -5,82 +5,82 @@
 
 namespace Model {
 
-bool FileHandler::saveScene(const Engine& engine, const std::string& filename) {
-    json j;
-    j["enableGravity"] = engine.enableGravity;
-    j["gravityAcceleration"] = engine.gravityAcceleration;
-    j["molecules"] = engine.getMolecules();
-    j["staticBodies"] = engine.getStaticBodies();
-    j["dynamicBodies"] = engine.getDynamicBodies();
+// bool FileHandler::saveScene(const Engine& engine, const std::string& filename) {
+//     json j;
+//     j["enableGravity"] = engine.enableGravity;
+//     j["gravityAcceleration"] = engine.gravityAcceleration;
+//     j["molecules"] = engine.getMolecules();
+//     j["staticBodies"] = engine.getStaticBodies();
+//     j["dynamicBodies"] = engine.getDynamicBodies();
 
-    std::filesystem::create_directory("saves");
-    std::ofstream file("saves/" + filename + ".json");
-    if (!file.is_open()) return false;
+//     std::filesystem::create_directory("saves");
+//     std::ofstream file("saves/" + filename + ".json");
+//     if (!file.is_open()) return false;
 
-    file << j.dump(4);
-    return true;
-}
+//     file << j.dump(4);
+//     return true;
+// }
 
 
-bool FileHandler::loadScene(Engine& engine, const std::string& filename) {
-    std::ifstream file("saves/" + filename + ".json");
-    if (!file.is_open()) return false;
+// bool FileHandler::loadScene(Engine& engine, const std::string& filename) {
+//     std::ifstream file("saves/" + filename + ".json");
+//     if (!file.is_open()) return false;
 
-    json j;
-    try {
-        file >> j;
+//     json j;
+//     try {
+//         file >> j;
         
-        engine.enableGravity = j.value("enableGravity", false);
-        engine.gravityAcceleration = j.value("gravityAcceleration", 0.0f);
+//         engine.enableGravity = j.value("enableGravity", false);
+//         engine.gravityAcceleration = j.value("gravityAcceleration", 0.0f);
 
-        engine.molecules_.clear();
-        engine.staticBodies_.clear();
-        engine.dynamicBodies_.clear();
+//         engine.molecules_.clear();
+//         engine.staticBodies_.clear();
+//         engine.dynamicBodies_.clear();
 
-        if (j.contains("molecules")) {
-            engine.molecules_ = j["molecules"].get<std::vector<Molecule>>();
-        }
-        if (j.contains("staticBodies")) {
-            engine.staticBodies_ = j["staticBodies"].get<std::vector<sf::FloatRect>>();
-        }
-        if (j.contains("dynamicBodies")) {
-            engine.dynamicBodies_.clear();
+//         if (j.contains("molecules")) {
+//             engine.molecules_ = j["molecules"].get<std::vector<Molecule>>();
+//         }
+//         if (j.contains("staticBodies")) {
+//             engine.staticBodies_ = j["staticBodies"].get<std::vector<sf::FloatRect>>();
+//         }
+//         if (j.contains("dynamicBodies")) {
+//             engine.dynamicBodies_.clear();
             
-            for (const auto& item : j["dynamicBodies"]) {
-                sf::Vector2f sz = item.at("size").get<sf::Vector2f>();
-                sf::Vector2f pos = item.at("position").get<sf::Vector2f>();
-                float m = item.at("mass").get<float>();
+//             for (const auto& item : j["dynamicBodies"]) {
+//                 sf::Vector2f sz = item.at("size").get<sf::Vector2f>();
+//                 sf::Vector2f pos = item.at("position").get<sf::Vector2f>();
+//                 float m = item.at("mass").get<float>();
 
-                DynamicBody body(sz, pos, m);
+//                 DynamicBody body(sz, pos, m);
 
-                if (item.contains("velocity")) body.velocity = item.at("velocity").get<sf::Vector2f>();
-                if (item.contains("angle")) body.angle = item.at("angle").get<float>();
-                if (item.contains("angularVelocity")) body.angularVelocity = item.at("angularVelocity").get<float>();
+//                 if (item.contains("velocity")) body.velocity = item.at("velocity").get<sf::Vector2f>();
+//                 if (item.contains("angle")) body.angle = item.at("angle").get<float>();
+//                 if (item.contains("angularVelocity")) body.angularVelocity = item.at("angularVelocity").get<float>();
 
-                engine.dynamicBodies_.push_back(body);
-            }
-        }
+//                 engine.dynamicBodies_.push_back(body);
+//             }
+//         }
         
-        return true;
-    } catch (json::exception& e) {
-        return false;
-    }
-}
+//         return true;
+//     } catch (json::exception& e) {
+//         return false;
+//     }
+// }
 
 
-std::vector<std::string> FileHandler::getFilesInFolder(const std::string& path) {
-    std::vector<std::string> files;
-    if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
-        for (const auto& entry : std::filesystem::directory_iterator(path)) {
-            if (entry.is_regular_file()) {
-                std::string fileName = entry.path().filename().string();
-                if (fileName.substr(fileName.length() - 5) == ".json") {
-                    files.push_back(fileName.erase(fileName.length() - 5));
-                }
-            }
-        }
-    }
-    return files;
-}
+// std::vector<std::string> FileHandler::getFilesInFolder(const std::string& path) {
+//     std::vector<std::string> files;
+//     if (std::filesystem::exists(path) && std::filesystem::is_directory(path)) {
+//         for (const auto& entry : std::filesystem::directory_iterator(path)) {
+//             if (entry.is_regular_file()) {
+//                 std::string fileName = entry.path().filename().string();
+//                 if (fileName.substr(fileName.length() - 5) == ".json") {
+//                     files.push_back(fileName.erase(fileName.length() - 5));
+//                 }
+//             }
+//         }
+//     }
+//     return files;
+// }
 
 }

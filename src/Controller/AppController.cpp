@@ -158,9 +158,9 @@ void AppController::processEvents() {
                     if (area.size.x < 1.0f || area.size.y < 1.0f) continue;
 
                     if (strcmp(settings.massModes[settings.currentMassMode], "Mass") == 0) {
-                        engine_.spawnDynamicBody(area.size, area.position + sf::Vector2f(area.size.x/2, area.size.y/2), settings.mass);
+                        engine_.spawnDynamicBody(area, settings.mass);
                     } else if (strcmp(settings.massModes[settings.currentMassMode], "Density") == 0) {
-                        engine_.spawnDynamicBody(area.size, area.position + sf::Vector2f(area.size.x/2, area.size.y/2), settings.density*area.size.x*area.size.y);
+                        engine_.spawnDynamicBody(area, settings.density*area.size.x*area.size.y);
                     }
                     break;
                 }
