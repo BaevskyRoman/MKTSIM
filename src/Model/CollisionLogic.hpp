@@ -22,20 +22,17 @@ inline bool isColliding(const sf::FloatRect& sBody, const DynamicBody& dBody) {
         {cosA, sinA}, {-sinA, cosA}
     };
     
-    bool out = true;
-    
     for (int i = 0; i < 4; ++i) {
         float min1, max1, min2, max2;
         Utils::project(dynVerts, axes[i], min1, max1);
         Utils::project(statVerts, axes[i], min2, max2);
         
         if (max1 < min2 || max2 < min1) {
-            out = false; 
-            break;
+            return false; 
         }
     }
-
-    return out;
+    
+    return true;
 }
 
 
@@ -46,32 +43,27 @@ inline bool isColliding(const DynamicBody& bodyA, const DynamicBody& bodyB) {
     sf::Vector2f vertsB[4];
     Utils::getVertices(bodyB, vertsB);
 
-    // Получаем 4 оси для проверки (2 от тела A, 2 от тела B)
     float cosA = std::cos(bodyA.angle);
     float sinA = std::sin(bodyA.angle);
     float cosB = std::cos(bodyB.angle);
     float sinB = std::sin(bodyB.angle);
     
     sf::Vector2f axes[4] = {
-        {cosA, sinA}, {-sinA, cosA}, // Локальные оси тела A
-        {cosB, sinB}, {-sinB, cosB}  // Локальные оси тела B
+        {cosA, sinA}, {-sinA, cosA},
+        {cosB, sinB}, {-sinB, cosB} 
     };
 
-    bool out = true;
-
-    // 1. Поиск пересечений по алгоритму SAT
     for (int k = 0; k < 4; ++k) {
         float min1, max1, min2, max2;
         Utils::project(vertsA, axes[k], min1, max1);
         Utils::project(vertsB, axes[k], min2, max2);
 
         if (max1 < min2 || max2 < min1) {
-            out = false; // Нашли разделяющую ось, столкновения нет
-            break;
+            return false; 
         }
     }
-
-    return out;
+    
+    return true;
 }
 
 
@@ -83,31 +75,34 @@ inline bool isColliding(const sf::FloatRect& body, const Molecule& mol) {
     float deltaY = mol.position.y - closestY;
 
     float distancePow2 = deltaX * deltaX + deltaY * deltaY;
-    return (distancePow2 < mol.radius * mol.radius);
+    return distancePow2 < (mol.radius * mol.radius);
 }
 
 
 inline bool isColliding(const DynamicBody& body, const Molecule& mol) {
+    // 1. Вектор от центра тела к центру молекулы
     float dx = mol.position.x - body.position.x;
     float dy = mol.position.y - body.position.y;
 
+    // 2. Поворот вектора в локальную систему координат тела
     float cosA = std::cos(body.angle);
     float sinA = std::sin(body.angle);
-
     float localX = dx * cosA + dy * sinA;
     float localY = -dx * sinA + dy * cosA;
 
     float halfW = body.size.x / 2.0f;
     float halfH = body.size.y / 2.0f;
 
+    // 3. Поиск ближайшей точки на локальном (неповернутом) прямоугольнике
     float closestLocalX = std::clamp(localX, -halfW, halfW);
     float closestLocalY = std::clamp(localY, -halfH, halfH);
 
+    // 4. Вектор от ближайшей точки к центру молекулы (в локальных координатах)
     float distX = localX - closestLocalX;
     float distY = localY - closestLocalY;
-    float distancePow2 = distX * distX + distY * distY;
 
-    return (distancePow2 < mol.radius * mol.radius);
+    // 5. Проверка квадрата расстояния
+    return (distX * distX + distY * distY) < (mol.radius * mol.radius);
 }
 
 

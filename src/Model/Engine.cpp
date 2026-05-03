@@ -114,15 +114,7 @@ void Engine::detectCollisions() {
 
 
 void Engine::resolveCollisions() {
-    for (auto& event : eventsSD) {
-        resolveCollision(event);
-    }
-
-    for (auto& event : eventsDD) {
-        resolveCollision(event);
-    }
-
-    for (auto& event : eventsSM) {
+    for (auto& event : eventsMM) {
         resolveCollision(event);
     }
 
@@ -130,7 +122,15 @@ void Engine::resolveCollisions() {
         resolveCollision(event);
     }
 
-    for (auto& event : eventsMM) {
+    for (auto& event : eventsSM) {
+        resolveCollision(event);
+    }
+
+    for (auto& event : eventsDD) {
+        resolveCollision(event);
+    }
+    
+    for (auto& event : eventsSD) {
         resolveCollision(event);
     }
 }
@@ -155,17 +155,11 @@ void Engine::resolveCollision(EventSD& event) {
     
     float minOverlap = std::numeric_limits<float>::max();
     sf::Vector2f collisionNormal;
-    bool isColliding = true;
     
     for (int i = 0; i < 4; ++i) {
         float min1, max1, min2, max2;
         Utils::project(dynVerts, axes[i], min1, max1);
         Utils::project(statVerts, axes[i], min2, max2);
-        
-        if (max1 < min2 || max2 < min1) {
-            isColliding = false; 
-            break;
-        }
         
         float overlap = std::min(max1, max2) - std::max(min1, min2);
         if (overlap < minOverlap) {
@@ -183,10 +177,6 @@ void Engine::resolveCollision(EventSD& event) {
         collisionNormal = -collisionNormal;
     }
 
-    dBody.position += collisionNormal * minOverlap;
-
-    Utils::getVertices(dBody, dynVerts);
-
     sf::Vector2f contactPoint = dynVerts[0];
     float minProj = Utils::dot(dynVerts[0], collisionNormal);
     for (int i = 1; i < 4; ++i) {
@@ -198,19 +188,17 @@ void Engine::resolveCollision(EventSD& event) {
     }
 
     sf::Vector2f rBody = contactPoint - dBody.position;
-    
     sf::Vector2f vBodyPoint = dBody.velocity + Utils::cross(dBody.angularVelocity, rBody);
     
     float velAlongNormal = Utils::dot(vBodyPoint, collisionNormal);
     
     if (velAlongNormal < 0) {
-        float e = 1.f;
         float rBodyCrossN = Utils::cross(rBody, collisionNormal);
         
         float invMassBody = 1.0f / dBody.mass;
         float invInertiaBody = 1.0f / dBody.inertia;
         
-        float j = -(1.0f + e) * velAlongNormal;
+        float j = -2.0f * velAlongNormal;
         j /= (invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
         
         sf::Vector2f impulse = collisionNormal * j;
@@ -225,37 +213,31 @@ void Engine::resolveCollision(EventDD& event) {
     DynamicBody& bodyA = dynamicBodies_[event.indexA];
     DynamicBody& bodyB = dynamicBodies_[event.indexB];
 
+    // Вычисляем вершины ОДИН раз
     sf::Vector2f vertsA[4];
     Utils::getVertices(bodyA, vertsA);
     
     sf::Vector2f vertsB[4];
     Utils::getVertices(bodyB, vertsB);
 
-    // Получаем 4 оси для проверки (2 от тела A, 2 от тела B)
     float cosA = std::cos(bodyA.angle);
     float sinA = std::sin(bodyA.angle);
     float cosB = std::cos(bodyB.angle);
     float sinB = std::sin(bodyB.angle);
     
     sf::Vector2f axes[4] = {
-        {cosA, sinA}, {-sinA, cosA}, // Локальные оси тела A
-        {cosB, sinB}, {-sinB, cosB}  // Локальные оси тела B
+        {cosA, sinA}, {-sinA, cosA},
+        {cosB, sinB}, {-sinB, cosB}
     };
 
     float minOverlap = std::numeric_limits<float>::max();
     sf::Vector2f collisionNormal;
-    bool isColliding = true;
 
-    // 1. Поиск пересечений по алгоритму SAT
+    // 1. Поиск нормали коллизии (ось с наименьшим перекрытием)
     for (int k = 0; k < 4; ++k) {
         float min1, max1, min2, max2;
         Utils::project(vertsA, axes[k], min1, max1);
         Utils::project(vertsB, axes[k], min2, max2);
-
-        if (max1 < min2 || max2 < min1) {
-            isColliding = false; // Нашли разделяющую ось, столкновения нет
-            break;
-        }
 
         float overlap = std::min(max1, max2) - std::max(min1, min2);
         if (overlap < minOverlap) {
@@ -264,89 +246,71 @@ void Engine::resolveCollision(EventDD& event) {
         }
     }
 
-    if (isColliding) {
-        // 2. Убеждаемся, что нормаль направлена от A к B
-        sf::Vector2f direction = bodyB.position - bodyA.position;
-        if (Utils::dot(direction, collisionNormal) < 0) {
-            collisionNormal = -collisionNormal;
-        }
+    // 2. Убеждаемся, что нормаль направлена от A к B
+    sf::Vector2f direction = bodyB.position - bodyA.position;
+    if (Utils::dot(direction, collisionNormal) < 0) {
+        collisionNormal = -collisionNormal;
+    }
 
-        // 3. Позиционная коррекция (раздвигаем оба тела)
+    // (Позиционная коррекция и повторный getVertices удалены)
+
+    // 3. Поиск Точки Контакта (используем УЖЕ рассчитанные vertsA и vertsB)
+    sf::Vector2f contactA = vertsA[0];
+    float maxProjA = Utils::dot(vertsA[0], collisionNormal);
+    for (int k = 1; k < 4; ++k) {
+        float proj = Utils::dot(vertsA[k], collisionNormal);
+        if (proj > maxProjA) {
+            maxProjA = proj;
+            contactA = vertsA[k];
+        }
+    }
+
+    sf::Vector2f contactB = vertsB[0];
+    float maxProjB = Utils::dot(vertsB[0], -collisionNormal);
+    for (int k = 1; k < 4; ++k) {
+        float proj = Utils::dot(vertsB[k], -collisionNormal);
+        if (proj > maxProjB) {
+            maxProjB = proj;
+            contactB = vertsB[k];
+        }
+    }
+
+    sf::Vector2f contactPoint = (contactA + contactB) * 0.5f;
+
+    // 4. Разрешение Импульса
+    sf::Vector2f rA = contactPoint - bodyA.position;
+    sf::Vector2f rB = contactPoint - bodyB.position;
+
+    sf::Vector2f vA_point = bodyA.velocity + Utils::cross(bodyA.angularVelocity, rA);
+    sf::Vector2f vB_point = bodyB.velocity + Utils::cross(bodyB.angularVelocity, rB);
+
+    sf::Vector2f relativeVelocity = vB_point - vA_point;
+    float velAlongNormal = Utils::dot(relativeVelocity, collisionNormal);
+
+    // Применяем импульс только если тела двигаются навстречу друг другу
+    if (velAlongNormal < 0) {
+        float e = 1.0f; 
+        
+        float rAcrossN = Utils::cross(rA, collisionNormal);
+        float rBcrossN = Utils::cross(rB, collisionNormal);
+
+        float invInertiaA = 1.0f / bodyA.inertia;
+        float invInertiaB = 1.0f / bodyB.inertia;
         float invMassA = 1.0f / bodyA.mass;
         float invMassB = 1.0f / bodyB.mass;
-        float invMassTotal = invMassA + invMassB;
 
-        bodyA.position -= collisionNormal * (minOverlap * (invMassA / invMassTotal));
-        bodyB.position += collisionNormal * (minOverlap * (invMassB / invMassTotal));
+        float j = -(1.0f + e) * velAlongNormal;
+        j /= (invMassA + invMassB + 
+                (rAcrossN * rAcrossN) * invInertiaA + 
+                (rBcrossN * rBcrossN) * invInertiaB);
 
-        // Пересчитываем вершины после коррекции позиции для точного поиска точки контакта
-        Utils::getVertices(bodyA, vertsA);
-        Utils::getVertices(bodyB, vertsB);
+        sf::Vector2f impulse = collisionNormal * j;
 
-        // 4. Поиск Точки Контакта (Эвристика для OBB)
-        // Ищем вершину тела A, которая глубже всего проникла по направлению нормали
-        sf::Vector2f contactA = vertsA[0];
-        float maxProjA = Utils::dot(vertsA[0], collisionNormal);
-        for (int k = 1; k < 4; ++k) {
-            float proj = Utils::dot(vertsA[k], collisionNormal);
-            if (proj > maxProjA) {
-                maxProjA = proj;
-                contactA = vertsA[k];
-            }
-        }
+        bodyA.velocity -= impulse * invMassA;
+        bodyA.angularVelocity -= rAcrossN * j * invInertiaA;
 
-        // Ищем вершину тела B, которая глубже всего проникла ПРОТИВ нормали
-        sf::Vector2f contactB = vertsB[0];
-        float maxProjB = Utils::dot(vertsB[0], -collisionNormal);
-        for (int k = 1; k < 4; ++k) {
-            float proj = Utils::dot(vertsB[k], -collisionNormal);
-            if (proj > maxProjB) {
-                maxProjB = proj;
-                contactB = vertsB[k];
-            }
-        }
-
-        // Усредняем обе "глубокие" вершины для получения стабильной точки контакта
-        sf::Vector2f contactPoint = (contactA + contactB) * 0.5f;
-
-        // 5. Разрешение Импульса
-        sf::Vector2f rA = contactPoint - bodyA.position;
-        sf::Vector2f rB = contactPoint - bodyB.position;
-
-        // Линейные скорости точек контакта с учетом вращения
-        sf::Vector2f vA_point = bodyA.velocity + Utils::cross(bodyA.angularVelocity, rA);
-        sf::Vector2f vB_point = bodyB.velocity + Utils::cross(bodyB.angularVelocity, rB);
-
-        // Относительная скорость (насколько быстро точка B движется относительно точки A)
-        sf::Vector2f relativeVelocity = vB_point - vA_point;
-        float velAlongNormal = Utils::dot(relativeVelocity, collisionNormal);
-
-        // Если тела двигаются навстречу друг другу
-        if (velAlongNormal < 0) {
-            float e = 1.0f; // Абсолютно упругий отскок
-            
-            float rAcrossN = Utils::cross(rA, collisionNormal);
-            float rBcrossN = Utils::cross(rB, collisionNormal);
-
-            float invInertiaA = 1.0f / bodyA.inertia;
-            float invInertiaB = 1.0f / bodyB.inertia;
-
-            // Полная формула импульса для двух вращающихся тел
-            float j = -(1.0f + e) * velAlongNormal;
-            j /= (invMassA + invMassB + 
-                    (rAcrossN * rAcrossN) * invInertiaA + 
-                    (rBcrossN * rBcrossN) * invInertiaB);
-
-            sf::Vector2f impulse = collisionNormal * j;
-
-            // Применяем импульс к телу A (знак минус, т.к. нормаль направлена от него)
-            bodyA.velocity -= impulse * invMassA;
-            bodyA.angularVelocity -= rAcrossN * j * invInertiaA;
-
-            // Применяем импульс к телу B
-            bodyB.velocity += impulse * invMassB;
-            bodyB.angularVelocity += rBcrossN * j * invInertiaB;
-        }
+        bodyB.velocity += impulse * invMassB;
+        bodyB.angularVelocity += rBcrossN * j * invInertiaB;
     }
 }
 
@@ -355,40 +319,41 @@ void Engine::resolveCollision(EventSM& event) {
     const sf::FloatRect& body = staticBodies_[event.indexA];
     Molecule& mol = molecules_[event.indexB];
 
+    // Заново находим дельту для вектора нормали
     float closestX = std::clamp(mol.position.x, body.position.x, body.position.x + body.size.x);
     float closestY = std::clamp(mol.position.y, body.position.y, body.position.y + body.size.y);
 
     float deltaX = mol.position.x - closestX;
     float deltaY = mol.position.y - closestY;
+    
+    float distance = std::sqrt(deltaX * deltaX + deltaY * deltaY);
+    sf::Vector2f normal;
 
-    float distancePow2 = deltaX * deltaX + deltaY * deltaY;
-    if (distancePow2 < mol.radius * mol.radius) {
-        float distance = std::sqrt(distancePow2);
-        sf::Vector2f normal;
-        float penetration = 0.0f;
+    // Определение нормали
+    if (distance > 0.0f) {
+        normal = sf::Vector2f(deltaX / distance, deltaY / distance);
+    } else {
+        // Редкий случай: центр молекулы оказался ровно внутри или на грани тела
+        float distToLeft = mol.position.x - body.position.x;
+        float distToRight = (body.position.x + body.size.x) - mol.position.x;
+        float distToTop = mol.position.y - body.position.y;
+        float distToBottom = (body.position.y + body.size.y) - mol.position.y;
 
-        if (distance > 0.0f) {
-            normal = sf::Vector2f(deltaX / distance, deltaY / distance);
-            penetration = mol.radius - distance;
-        } else {
-            float distToLeft = mol.position.x - body.position.x;
-            float distToRight = (body.position.x + body.size.x) - mol.position.x;
-            float distToTop = mol.position.y - body.position.y;
-            float distToBottom = (body.position.y + body.size.y) - mol.position.y;
+        float minDist = std::min({distToLeft, distToRight, distToTop, distToBottom});
 
-            float minDist = std::min({distToLeft, distToRight, distToTop, distToBottom});
+        if (minDist == distToLeft) { normal = {-1.0f, 0.0f}; }
+        else if (minDist == distToRight) { normal = {1.0f, 0.0f}; }
+        else if (minDist == distToTop) { normal = {0.0f, -1.0f}; }
+        else { normal = {0.0f, 1.0f}; }
+    }
 
-            if (minDist == distToLeft) { normal = {-1.0f, 0.0f}; penetration = distToLeft + mol.radius; }
-            else if (minDist == distToRight) { normal = {1.0f, 0.0f}; penetration = distToRight + mol.radius; }
-            else if (minDist == distToTop) { normal = {0.0f, -1.0f}; penetration = distToTop + mol.radius; }
-            else { normal = {0.0f, 1.0f}; penetration = distToBottom + mol.radius; }
-        }
-
-        float velocityAlongNormal = mol.velocity.x * normal.x + mol.velocity.y * normal.y;
-        
-        if (velocityAlongNormal < 0) {
-            mol.velocity -= normal * (2.0f * velocityAlongNormal);
-        }
+    // Проекция скорости на нормаль
+    float velocityAlongNormal = mol.velocity.x * normal.x + mol.velocity.y * normal.y;
+    
+    // Если молекула движется НАВСТРЕЧУ прямоугольнику
+    if (velocityAlongNormal < 0) {
+        // Формула упругого отражения от неподвижного объекта (стенки): v' = v - 2(v·n)n
+        mol.velocity -= normal * (2.0f * velocityAlongNormal);
     }
 }
 
@@ -397,6 +362,7 @@ void Engine::resolveCollision(EventDM& event) {
     DynamicBody& body = dynamicBodies_[event.indexA];
     Molecule& mol = molecules_[event.indexB];
 
+    // Заново вычисляем локальные координаты, так как они нужны для нормали и точки контакта
     float dx = mol.position.x - body.position.x;
     float dy = mol.position.y - body.position.y;
 
@@ -414,72 +380,74 @@ void Engine::resolveCollision(EventDM& event) {
 
     float distX = localX - closestLocalX;
     float distY = localY - closestLocalY;
-    float distancePow2 = distX * distX + distY * distY;
+    
+    float distance = std::sqrt(distX * distX + distY * distY);
+    
+    sf::Vector2f localNormal;
 
-    if (distancePow2 < mol.radius * mol.radius) {
-        float distance = std::sqrt(distancePow2);
-        
-        sf::Vector2f localNormal;
-        float penetration = 0.0f;
+    // Определение локальной нормали
+    if (distance > 0.0f) {
+        localNormal = sf::Vector2f(distX / distance, distY / distance);
+    } else {
+        // Редкий случай: центр молекулы внутри тела
+        float distToLeft = localX - (-halfW);
+        float distToRight = halfW - localX;
+        float distToBottom = localY - (-halfH);
+        float distToTop = halfH - localY;
 
-        if (distance > 0.0f) {
-            localNormal = sf::Vector2f(distX / distance, distY / distance);
-            penetration = mol.radius - distance;
-        } else {
-            float distToLeft = localX - (-halfW);
-            float distToRight = halfW - localX;
-            float distToBottom = localY - (-halfH);
-            float distToTop = halfH - localY;
+        float minDist = std::min({distToLeft, distToRight, distToBottom, distToTop});
 
-            float minDist = std::min({distToLeft, distToRight, distToBottom, distToTop});
-
-            if (minDist == distToLeft) { 
-                localNormal = {-1.0f, 0.0f}; penetration = distToLeft + mol.radius; closestLocalX = -halfW; 
-            } else if (minDist == distToRight) { 
-                localNormal = {1.0f, 0.0f}; penetration = distToRight + mol.radius; closestLocalX = halfW; 
-            } else if (minDist == distToBottom) { 
-                localNormal = {0.0f, -1.0f}; penetration = distToBottom + mol.radius; closestLocalY = -halfH; 
-            } else { 
-                localNormal = {0.0f, 1.0f}; penetration = distToTop + mol.radius; closestLocalY = halfH; 
-            }
+        if (minDist == distToLeft) { 
+            localNormal = {-1.0f, 0.0f}; closestLocalX = -halfW; 
+        } else if (minDist == distToRight) { 
+            localNormal = {1.0f, 0.0f}; closestLocalX = halfW; 
+        } else if (minDist == distToBottom) { 
+            localNormal = {0.0f, -1.0f}; closestLocalY = -halfH; 
+        } else { 
+            localNormal = {0.0f, 1.0f}; closestLocalY = halfH; 
         }
+    }
 
-        sf::Vector2f worldNormal(
-            localNormal.x * cosA - localNormal.y * sinA,
-            localNormal.x * sinA + localNormal.y * cosA
-        );
+    // Перевод нормали обратно в мировые координаты
+    sf::Vector2f worldNormal(
+        localNormal.x * cosA - localNormal.y * sinA,
+        localNormal.x * sinA + localNormal.y * cosA
+    );
 
-        sf::Vector2f worldContactPoint(
-            closestLocalX * cosA - closestLocalY * sinA + body.position.x,
-            closestLocalX * sinA + closestLocalY * cosA + body.position.y
-        );
+    // Перевод точки контакта обратно в мировые координаты
+    sf::Vector2f worldContactPoint(
+        closestLocalX * cosA - closestLocalY * sinA + body.position.x,
+        closestLocalX * sinA + closestLocalY * cosA + body.position.y
+    );
 
-        float invMassMol = 1.0f / mol.mass;
-        float invMassBody = 1.0f / body.mass;
-        float invMassTotal = invMassMol + invMassBody;
+    // Подготовка масс и инерции
+    float invMassMol = 1.0f / mol.mass;
+    float invMassBody = 1.0f / body.mass;
+    float invInertiaBody = 1.0f / body.inertia;
 
-        sf::Vector2f rBody = worldContactPoint - body.position;
-        
-        sf::Vector2f vBodyPoint = body.velocity + Utils::cross(body.angularVelocity, rBody);
-        sf::Vector2f vMolPoint = mol.velocity;
+    // Вектор от центра масс тела к точке контакта
+    sf::Vector2f rBody = worldContactPoint - body.position;
+    
+    // Линейные скорости в точке контакта
+    sf::Vector2f vBodyPoint = body.velocity + Utils::cross(body.angularVelocity, rBody);
+    sf::Vector2f vMolPoint = mol.velocity; // Молекула не вращается, берем центр
 
-        sf::Vector2f relativeVelocity = vMolPoint - vBodyPoint;
-        float velAlongNormal = Utils::dot(relativeVelocity, worldNormal);
+    sf::Vector2f relativeVelocity = vMolPoint - vBodyPoint;
+    float velAlongNormal = Utils::dot(relativeVelocity, worldNormal);
 
-        if (velAlongNormal < 0) {
-            float e = 1.0f;
-            float rBodyCrossN = Utils::cross(rBody, worldNormal);
-            float invInertiaBody = 1.0f / body.inertia;
+    // Применяем импульс, только если объекты сближаются
+    if (velAlongNormal < 0) {
+        float e = 1.0f; // Абсолютно упругий удар
+        float rBodyCrossN = Utils::cross(rBody, worldNormal);
 
-            float j = -(1.0f + e) * velAlongNormal;
-            j /= (invMassMol + invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
+        float j = -(1.0f + e) * velAlongNormal;
+        j /= (invMassMol + invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
 
-            sf::Vector2f impulse = worldNormal * j;
+        sf::Vector2f impulse = worldNormal * j;
 
-            mol.velocity += impulse * invMassMol;
-            body.velocity -= impulse * invMassBody;
-            body.angularVelocity -= rBodyCrossN * j * invInertiaBody;
-        }
+        mol.velocity += impulse * invMassMol;
+        body.velocity -= impulse * invMassBody;
+        body.angularVelocity -= rBodyCrossN * j * invInertiaBody;
     }
 }
 

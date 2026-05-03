@@ -32,7 +32,7 @@ public:
     
     bool enableGravity = false;
     float gravityAcceleration = 0;
-    bool useGrid = false;
+    bool useGrid = true;
     
     friend class FileHandler;
     friend class SimulationRecorder;
