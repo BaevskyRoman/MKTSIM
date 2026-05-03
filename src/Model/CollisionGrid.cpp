@@ -1,4 +1,5 @@
 #include "Model/CollisionGrid.hpp"
+#include "Model/CollisionLogic.hpp"
 
 
 namespace Model {
@@ -44,7 +45,7 @@ void CollisionGrid::update(const std::vector<Molecule>& molecules) {
 }
 
 
-void CollisionGrid::checkGrid(const std::vector<Molecule>& molecules, std::vector<Event>& events) const {
+void CollisionGrid::checkGrid(const std::vector<Molecule>& molecules, std::vector<EventMM>& events) const {
     for (uint32_t y = 0; y < gridHeight; ++y) {
         for (uint32_t x = 0; x < gridWidth; ++x) {
             uint32_t currentCellInd = getGridIndex(x, y);
@@ -61,13 +62,13 @@ void CollisionGrid::checkGrid(const std::vector<Molecule>& molecules, std::vecto
 }
 
 
-void CollisionGrid::checkInCell(uint32_t cell, const std::vector<Molecule>& molecules, std::vector<Event>& events) const {
+void CollisionGrid::checkInCell(uint32_t cell, const std::vector<Molecule>& molecules, std::vector<EventMM>& events) const {
     uint32_t i = head[cell];
 
     while (i != EMPTY) {
         uint32_t j = next[i];
         while (j != EMPTY) {
-            if (isColliding(molecules[i], molecules[j])) {
+            if (Geo::isColliding(molecules[i], molecules[j])) {
                 events.emplace_back(i, j);
             }
             j = next[j];
@@ -78,7 +79,7 @@ void CollisionGrid::checkInCell(uint32_t cell, const std::vector<Molecule>& mole
 
 
 void CollisionGrid::checkCells(uint32_t cellA, int32_t bx, int32_t by, 
-                        const std::vector<Molecule>& molecules, std::vector<Event>& events) const {
+                        const std::vector<Molecule>& molecules, std::vector<EventMM>& events) const {
     if (bx < 0 || bx >= (int32_t)gridWidth || by < 0 || by >= (int32_t)gridHeight) return;
 
     uint32_t cellB = getGridIndex(static_cast<uint32_t>(bx), static_cast<uint32_t>(by));
@@ -87,7 +88,7 @@ void CollisionGrid::checkCells(uint32_t cellA, int32_t bx, int32_t by,
     while (i != EMPTY) {
         uint32_t j = head[cellB];
         while (j != EMPTY) {
-            if (isColliding(molecules[i], molecules[j])) {
+            if (Geo::isColliding(molecules[i], molecules[j])) {
                 events.emplace_back(i, j);
             }
             j = next[j];
@@ -97,17 +98,8 @@ void CollisionGrid::checkCells(uint32_t cellA, int32_t bx, int32_t by,
 }
 
 
-void CollisionGrid::checkUnbound(const std::vector<Molecule>& molecules, std::vector<Event>& events) const {
+void CollisionGrid::checkUnbound(const std::vector<Molecule>& molecules, std::vector<EventMM>& events) const {
     // something
-}
-
-
-bool CollisionGrid::isColliding(const Molecule& molA, const Molecule& molB) const {
-    sf::Vector2f delta = molA.position - molB.position;
-    float deltaPow2 = delta.x * delta.x + delta.y * delta.y;
-    float minDist = molA.radius + molB.radius;
-
-    return deltaPow2 < minDist * minDist;
 }
 
 

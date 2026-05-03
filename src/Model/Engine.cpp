@@ -1,45 +1,10 @@
 #include "Model/Engine.hpp"
+#include "Model/CollisionLogic.hpp"
 #include "Config/VisualConfig.hpp"
 #include "Utils/Utils.hpp"
 #include <cmath>
 #include <algorithm>
 #include <limits>
-
-
-namespace {
-    void getVertices(const Model::DynamicBody& body, sf::Vector2f out[4]) {
-        float hw = body.size.x / 2.0f;
-        float hh = body.size.y / 2.0f;
-        float cosA = std::cos(body.angle);
-        float sinA = std::sin(body.angle);
-        
-        sf::Vector2f corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
-        for (int i = 0; i < 4; ++i) {
-            out[i] = sf::Vector2f(
-                corners[i].x * cosA - corners[i].y * sinA + body.position.x,
-                corners[i].x * sinA + corners[i].y * cosA + body.position.y
-            );
-        }
-    }
-
-
-    void getVertices(const sf::FloatRect& rect, sf::Vector2f out[4]) {
-        out[0] = sf::Vector2f(rect.position.x, rect.position.y);
-        out[1] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
-        out[2] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + rect.size.y);
-        out[3] = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y);
-    }
-
-
-    void project(const sf::Vector2f vertices[4], const sf::Vector2f& axis, float& min, float& max) {
-        min = max = Utils::dot(vertices[0], axis);
-        for (int i = 1; i < 4; ++i) {
-            float proj = Utils::dot(vertices[i], axis);
-            if (proj < min) min = proj;
-            if (proj > max) max = proj;
-        }
-    }
-}
 
 
 namespace Model {
@@ -88,62 +53,98 @@ void Engine::update(float deltaTime) {
         body.move(deltaTime);
     }
 
-    handleCollisions();
+    detectCollisions();
+    resolveCollisions();
 }
 
 
-void Engine::handleCollisions() {
-    // --- DYNAMIC BODY TO STATIC BODY ---
-    for (auto& dBody : dynamicBodies_) {
-        for (const auto& sBody : staticBodies_) {
-            handleCollision(dBody, sBody);
+void Engine::detectCollisions() {
+    eventsSD.clear();
+    eventsDD.clear();
+    eventsSM.clear();
+    eventsDM.clear();
+    eventsMM.clear();
+
+    if (useGrid) {
+        // --- MOL TO MOL ---
+        grid.update(molecules_);
+        grid.checkGrid(molecules_, eventsMM);
+    } 
+    else {
+        // --- MOL TO MOL ---
+        for (size_t i = 0; i < molecules_.size(); ++i) {
+            for (size_t j = i + 1; j < molecules_.size(); ++j) {
+                if (Geo::isColliding(molecules_[i], molecules_[j])) eventsMM.emplace_back(i, j);
+            }
+        }
+    }
+
+    // --- STATIC BODY TO DYNAMIC BODY ---
+    for (size_t s = 0; s < staticBodies_.size(); ++s) {
+        for (size_t d = 0; d < dynamicBodies_.size(); ++d) {
+            if (Geo::isColliding(staticBodies_[s], dynamicBodies_[d])) eventsSD.emplace_back(s, d);
         }
     }
 
     // --- DYNAMIC BODY TO DYNAMIC BODY ---
     for (size_t i = 0; i < dynamicBodies_.size(); ++i) {
         for (size_t j = i + 1; j < dynamicBodies_.size(); ++j) {
-            handleCollision(dynamicBodies_[i], dynamicBodies_[j]);
+            if (Geo::isColliding(dynamicBodies_[i], dynamicBodies_[j])) eventsDD.emplace_back(i, j);
         }
     }
 
-    // --- MOL TO STATIC BODY ---
-    for (auto& mol : molecules_) {
-        for (const auto& body : staticBodies_) {
-            handleCollision(mol, body);
+    // --- STATIC BODY TO MOL ---
+    for (size_t s = 0; s < staticBodies_.size(); ++s) {
+        for (size_t m = 0; m < molecules_.size(); ++m) {
+            if (Geo::isColliding(staticBodies_[s], molecules_[m])) eventsSM.emplace_back(s, m);
         }
     }
 
-    // --- MOL TO DYNAMIC BODY ---
-    for (auto& mol : molecules_) {
-        for (auto& body : dynamicBodies_) {
-            handleCollision(mol, body);
+    // --- DYNAMIC BODY TO MOL ---
+    for (size_t d = 0; d < dynamicBodies_.size(); ++d) {
+        for (size_t m = 0; m < molecules_.size(); ++m) {
+            if (Geo::isColliding(dynamicBodies_[d], molecules_[m])) eventsDM.emplace_back(d, m);
         }
     }
 
-    // --- MOL TO MOL ---
-    // for (size_t i = 0; i < molecules_.size(); ++i) {
-    //     for (size_t j = i + 1; j < molecules_.size(); ++j) {
-    //         handleCollision(molecules_[i], molecules_[j]);
-    //     }
-    // }
-    events.clear();
-    grid.update(molecules_);
-    grid.checkGrid(molecules_, events);
-    Utils::Random::shuffle(events);
+    Utils::Random::shuffle(eventsDD);
+    Utils::Random::shuffle(eventsDM);
+    Utils::Random::shuffle(eventsMM);
+}
 
-    for (auto& event : events) {
-        handleCollision(event);
+
+void Engine::resolveCollisions() {
+    for (auto& event : eventsSD) {
+        resolveCollision(event);
+    }
+
+    for (auto& event : eventsDD) {
+        resolveCollision(event);
+    }
+
+    for (auto& event : eventsSM) {
+        resolveCollision(event);
+    }
+
+    for (auto& event : eventsDM) {
+        resolveCollision(event);
+    }
+
+    for (auto& event : eventsMM) {
+        resolveCollision(event);
     }
 }
 
 
-void Engine::handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody) {
+void Engine::resolveCollision(EventSD& event) {
+    const sf::FloatRect& sBody = staticBodies_[event.indexA];
+    DynamicBody& dBody = dynamicBodies_[event.indexB];
+
     sf::Vector2f dynVerts[4];
-    getVertices(dBody, dynVerts);
+    Utils::getVertices(dBody, dynVerts);
     
     sf::Vector2f statVerts[4];
-    getVertices(sBody, statVerts);
+    Utils::getVertices(sBody, statVerts);
     
     float cosA = std::cos(dBody.angle);
     float sinA = std::sin(dBody.angle);
@@ -158,8 +159,8 @@ void Engine::handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody) {
     
     for (int i = 0; i < 4; ++i) {
         float min1, max1, min2, max2;
-        project(dynVerts, axes[i], min1, max1);
-        project(statVerts, axes[i], min2, max2);
+        Utils::project(dynVerts, axes[i], min1, max1);
+        Utils::project(statVerts, axes[i], min2, max2);
         
         if (max1 < min2 || max2 < min1) {
             isColliding = false; 
@@ -173,61 +174,62 @@ void Engine::handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody) {
         }
     }
     
-    if (isColliding) {
-        sf::Vector2f staticCenter(
-            sBody.position.x + sBody.size.x / 2.0f, 
-            sBody.position.y + sBody.size.y / 2.0f
-        );
-        sf::Vector2f direction = dBody.position - staticCenter;
-        if (Utils::dot(direction, collisionNormal) < 0) {
-            collisionNormal = -collisionNormal;
+    sf::Vector2f staticCenter(
+        sBody.position.x + sBody.size.x / 2.0f, 
+        sBody.position.y + sBody.size.y / 2.0f
+    );
+    sf::Vector2f direction = dBody.position - staticCenter;
+    if (Utils::dot(direction, collisionNormal) < 0) {
+        collisionNormal = -collisionNormal;
+    }
+
+    dBody.position += collisionNormal * minOverlap;
+
+    Utils::getVertices(dBody, dynVerts);
+
+    sf::Vector2f contactPoint = dynVerts[0];
+    float minProj = Utils::dot(dynVerts[0], collisionNormal);
+    for (int i = 1; i < 4; ++i) {
+        float proj = Utils::dot(dynVerts[i], collisionNormal);
+        if (proj < minProj) {
+            minProj = proj;
+            contactPoint = dynVerts[i];
         }
+    }
 
-        dBody.position += collisionNormal * minOverlap;
-
-        getVertices(dBody, dynVerts);
-
-        sf::Vector2f contactPoint = dynVerts[0];
-        float minProj = Utils::dot(dynVerts[0], collisionNormal);
-        for (int i = 1; i < 4; ++i) {
-            float proj = Utils::dot(dynVerts[i], collisionNormal);
-            if (proj < minProj) {
-                minProj = proj;
-                contactPoint = dynVerts[i];
-            }
-        }
-
-        sf::Vector2f rBody = contactPoint - dBody.position;
+    sf::Vector2f rBody = contactPoint - dBody.position;
+    
+    sf::Vector2f vBodyPoint = dBody.velocity + Utils::cross(dBody.angularVelocity, rBody);
+    
+    float velAlongNormal = Utils::dot(vBodyPoint, collisionNormal);
+    
+    if (velAlongNormal < 0) {
+        float e = 1.f;
+        float rBodyCrossN = Utils::cross(rBody, collisionNormal);
         
-        sf::Vector2f vBodyPoint = dBody.velocity + Utils::cross(dBody.angularVelocity, rBody);
+        float invMassBody = 1.0f / dBody.mass;
+        float invInertiaBody = 1.0f / dBody.inertia;
         
-        float velAlongNormal = Utils::dot(vBodyPoint, collisionNormal);
+        float j = -(1.0f + e) * velAlongNormal;
+        j /= (invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
         
-        if (velAlongNormal < 0) {
-            float e = 1.f;
-            float rBodyCrossN = Utils::cross(rBody, collisionNormal);
-            
-            float invMassBody = 1.0f / dBody.mass;
-            float invInertiaBody = 1.0f / dBody.inertia;
-            
-            float j = -(1.0f + e) * velAlongNormal;
-            j /= (invMassBody + (rBodyCrossN * rBodyCrossN) * invInertiaBody);
-            
-            sf::Vector2f impulse = collisionNormal * j;
-            
-            dBody.velocity += impulse * invMassBody;
-            dBody.angularVelocity += rBodyCrossN * j * invInertiaBody;
-        }
+        sf::Vector2f impulse = collisionNormal * j;
+        
+        dBody.velocity += impulse * invMassBody;
+        dBody.angularVelocity += rBodyCrossN * j * invInertiaBody;
     }
 }
 
 
-void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
+void Engine::resolveCollision(EventDD& event) {
+    DynamicBody& bodyA = dynamicBodies_[event.indexA];
+    DynamicBody& bodyB = dynamicBodies_[event.indexB];
+
     sf::Vector2f vertsA[4];
-    getVertices(bodyA, vertsA);
+    Utils::getVertices(bodyA, vertsA);
     
     sf::Vector2f vertsB[4];
-    getVertices(bodyB, vertsB);
+    Utils::getVertices(bodyB, vertsB);
 
     // Получаем 4 оси для проверки (2 от тела A, 2 от тела B)
     float cosA = std::cos(bodyA.angle);
@@ -247,8 +249,8 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
     // 1. Поиск пересечений по алгоритму SAT
     for (int k = 0; k < 4; ++k) {
         float min1, max1, min2, max2;
-        project(vertsA, axes[k], min1, max1);
-        project(vertsB, axes[k], min2, max2);
+        Utils::project(vertsA, axes[k], min1, max1);
+        Utils::project(vertsB, axes[k], min2, max2);
 
         if (max1 < min2 || max2 < min1) {
             isColliding = false; // Нашли разделяющую ось, столкновения нет
@@ -278,8 +280,8 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
         bodyB.position += collisionNormal * (minOverlap * (invMassB / invMassTotal));
 
         // Пересчитываем вершины после коррекции позиции для точного поиска точки контакта
-        getVertices(bodyA, vertsA);
-        getVertices(bodyB, vertsB);
+        Utils::getVertices(bodyA, vertsA);
+        Utils::getVertices(bodyB, vertsB);
 
         // 4. Поиск Точки Контакта (Эвристика для OBB)
         // Ищем вершину тела A, которая глубже всего проникла по направлению нормали
@@ -349,7 +351,10 @@ void Engine::handleCollision(DynamicBody& bodyA, DynamicBody& bodyB) {
 }
 
 
-void Engine::handleCollision(Molecule& mol, const sf::FloatRect& body) {
+void Engine::resolveCollision(EventSM& event) {
+    const sf::FloatRect& body = staticBodies_[event.indexA];
+    Molecule& mol = molecules_[event.indexB];
+
     float closestX = std::clamp(mol.position.x, body.position.x, body.position.x + body.size.x);
     float closestY = std::clamp(mol.position.y, body.position.y, body.position.y + body.size.y);
 
@@ -388,7 +393,10 @@ void Engine::handleCollision(Molecule& mol, const sf::FloatRect& body) {
 }
 
 
-void Engine::handleCollision(Molecule& mol, DynamicBody& body) {
+void Engine::resolveCollision(EventDM& event) {
+    DynamicBody& body = dynamicBodies_[event.indexA];
+    Molecule& mol = molecules_[event.indexB];
+
     float dx = mol.position.x - body.position.x;
     float dy = mol.position.y - body.position.y;
 
@@ -476,43 +484,32 @@ void Engine::handleCollision(Molecule& mol, DynamicBody& body) {
 }
 
 
-void Engine::handleCollision(Molecule& m1, Molecule& m2) {
-    sf::Vector2f delta = m2.position - m1.position;
+void Engine::resolveCollision(EventMM& event) {
+    Molecule& molA = molecules_[event.indexA];
+    Molecule& molB = molecules_[event.indexB];
 
-    float deltaPow2 = delta.x * delta.x + delta.y * delta.y;
-    float minDist = m1.radius + m2.radius;
-
-    if (deltaPow2 < minDist * minDist) {
-        float distance = std::sqrt(deltaPow2);
-        
-        sf::Vector2f normal;
-        float overlap;
-        if (Utils::isZero(distance)) {
-            float angle = Utils::Random::getFloat(0.0f, 2.0f * Utils::PI);
-            normal = {std::cos(angle), std::sin(angle)};
-            overlap = minDist;
-        }
-        else {
-            normal = delta / distance;
-            overlap = minDist - distance;
-        }
-
-        sf::Vector2f relativeVelocity = m1.velocity - m2.velocity;
-        float velocityAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
-
-        if (velocityAlongNormal < 0) {
-            return;
-        }
-
-        float impulseScalar = (2.0f * velocityAlongNormal) / (m1.mass + m2.mass);
-        m1.velocity -= normal * (impulseScalar * m2.mass);
-        m2.velocity += normal * (impulseScalar * m1.mass);
+    sf::Vector2f delta = molB.position - molA.position;
+    float distance = std::sqrt(delta.x * delta.x + delta.y * delta.y);
+    
+    sf::Vector2f normal;
+    if (Utils::isZero(distance)) {
+        float angle = Utils::Random::getFloat(0.0f, 2.0f * Utils::PI);
+        normal = {std::cos(angle), std::sin(angle)};
     }
-}
+    else {
+        normal = delta / distance;
+    }
 
+    sf::Vector2f relativeVelocity = molA.velocity - molB.velocity;
+    float velocityAlongNormal = relativeVelocity.x * normal.x + relativeVelocity.y * normal.y;
 
-void Engine::handleCollision(Event& event) {
-    handleCollision(molecules_[event.indexA], molecules_[event.indexB]);
+    if (velocityAlongNormal < 0) {
+        return;
+    }
+
+    float impulseScalar = (2.0f * velocityAlongNormal) / (molA.mass + molB.mass);
+    molA.velocity -= normal * (impulseScalar * molB.mass);
+    molB.velocity += normal * (impulseScalar * molA.mass);
 }
 
 

@@ -5,8 +5,8 @@
 #include "Model/CollisionGrid.hpp"
 #include "Model/Event.hpp"
 #include <SFML/Graphics/Rect.hpp>
-#include <vector>
 #include <SFML/System/Vector2.hpp>
+#include <vector>
 
 
 namespace Model {
@@ -32,6 +32,7 @@ public:
     
     bool enableGravity = false;
     float gravityAcceleration = 0;
+    bool useGrid = false;
     
     friend class FileHandler;
     friend class SimulationRecorder;
@@ -41,16 +42,26 @@ private:
     std::vector<sf::FloatRect> staticBodies_;
     std::vector<DynamicBody> dynamicBodies_;
 
-    std::vector<Event> events;
+    std::vector<EventSD> eventsSD;
+    std::vector<EventDD> eventsDD;
+    std::vector<EventSM> eventsSM;
+    std::vector<EventDM> eventsDM;
+    std::vector<EventMM> eventsMM;
     CollisionGrid grid;
     
-    void handleCollisions();
+    void detectCollisions();
+    void resolveCollisions();
+
+    void resolveCollision(EventSD& event);
+    void resolveCollision(EventDD& event);
+    void resolveCollision(EventSM& event);
+    void resolveCollision(EventDM& event);
+    void resolveCollision(EventMM& event);
+
     void handleCollision(DynamicBody& dBody, const sf::FloatRect& sBody);
     void handleCollision(DynamicBody& bodyA, DynamicBody& bodyB);
     void handleCollision(Molecule& mol, const sf::FloatRect& body);
     void handleCollision(Molecule& mol, DynamicBody& body);
-    void handleCollision(Molecule& mol1, Molecule& mol2);
-    void handleCollision(Event& event);
 };
 
 }

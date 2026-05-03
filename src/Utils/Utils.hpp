@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Model/DynamicBody.hpp>
 #include <SFML/Graphics.hpp>
 #include <cmath>
 #include <random>
@@ -40,6 +41,38 @@ namespace Utils {
         );
     }
     
+    inline void getVertices(const Model::DynamicBody& body, sf::Vector2f out[4]) {
+        float hw = body.size.x / 2.0f;
+        float hh = body.size.y / 2.0f;
+        float cosA = std::cos(body.angle);
+        float sinA = std::sin(body.angle);
+        
+        sf::Vector2f corners[4] = {{-hw, -hh}, {hw, -hh}, {hw, hh}, {-hw, hh}};
+        for (int i = 0; i < 4; ++i) {
+            out[i] = sf::Vector2f(
+                corners[i].x * cosA - corners[i].y * sinA + body.position.x,
+                corners[i].x * sinA + corners[i].y * cosA + body.position.y
+            );
+        }
+    }
+
+
+    inline void getVertices(const sf::FloatRect& rect, sf::Vector2f out[4]) {
+        out[0] = sf::Vector2f(rect.position.x, rect.position.y);
+        out[1] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y);
+        out[2] = sf::Vector2f(rect.position.x + rect.size.x, rect.position.y + rect.size.y);
+        out[3] = sf::Vector2f(rect.position.x, rect.position.y + rect.size.y);
+    }
+
+
+    inline void project(const sf::Vector2f vertices[4], const sf::Vector2f& axis, float& min, float& max) {
+        min = max = Utils::dot(vertices[0], axis);
+        for (int i = 1; i < 4; ++i) {
+            float proj = Utils::dot(vertices[i], axis);
+            if (proj < min) min = proj;
+            if (proj > max) max = proj;
+        }
+    }
 
 class Random {
 public:
